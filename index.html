@@ -1,0 +1,301 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>SkillProof — Professional English Test</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,500;0,600;1,500&family=Inter:wght@400;500;600&family=IBM+Plex+Mono:wght@500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --paper: #FAF7F0;
+    --paper-dim: #F1ECDF;
+    --ink: #1C2A3A;
+    --ink-soft: #4A5A6B;
+    --verify: #1F6B45;
+    --rule: #D9D2BD;
+    --bronze: #9C6B3E;
+    --silver: #6E7580;
+    --gold: #A9821F;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--paper);
+    color: var(--ink);
+    font-family: 'Inter', sans-serif;
+    line-height: 1.5;
+    padding: 48px 20px 80px;
+  }
+  .wrap { max-width: 600px; margin: 0 auto; }
+  header { margin-bottom: 36px; }
+  .mark {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 12px;
+    letter-spacing: 0.12em;
+    color: var(--verify);
+    text-transform: uppercase;
+    margin-bottom: 10px;
+  }
+  h1 {
+    font-family: 'Lora', serif;
+    font-weight: 600;
+    font-size: 34px;
+    margin: 0 0 8px;
+    color: var(--ink);
+  }
+  .tagline { color: var(--ink-soft); font-size: 15px; margin: 0; }
+
+  .eyebrow {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--ink-soft);
+    margin: 0 0 8px;
+  }
+  .case-file {
+    background: var(--paper-dim);
+    border-left: 3px solid var(--verify);
+    padding: 18px 20px;
+    font-family: 'Lora', serif;
+    font-style: italic;
+    font-size: 16px;
+    color: var(--ink);
+    margin-bottom: 28px;
+  }
+
+  label {
+    display: block;
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--ink-soft);
+    margin-bottom: 6px;
+  }
+  input, textarea {
+    width: 100%;
+    font-family: 'Inter', sans-serif;
+    font-size: 15px;
+    color: var(--ink);
+    background: #fff;
+    border: 1px solid var(--rule);
+    border-radius: 3px;
+    padding: 12px 14px;
+    margin-bottom: 22px;
+    resize: vertical;
+  }
+  input:focus-visible, textarea:focus-visible, button:focus-visible {
+    outline: 2px solid var(--verify);
+    outline-offset: 2px;
+  }
+
+  button {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 13px;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    background: var(--ink);
+    color: var(--paper);
+    border: none;
+    border-radius: 3px;
+    padding: 13px 22px;
+    cursor: pointer;
+  }
+  button:disabled { opacity: 0.5; cursor: wait; }
+  button.secondary {
+    background: transparent;
+    color: var(--ink);
+    border: 1px solid var(--rule);
+  }
+
+  #status {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 12px;
+    color: var(--ink-soft);
+    min-height: 18px;
+  }
+
+  /* Result card */
+  .badge-card {
+    background: #fff;
+    border: 1px solid var(--rule);
+    border-radius: 4px;
+    padding: 36px 28px;
+    text-align: center;
+    position: relative;
+    animation: rise 0.4s ease-out;
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .badge-card { animation: none; }
+  }
+  @keyframes rise {
+    from { opacity: 0; transform: translateY(6px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+  .seal {
+    width: 96px; height: 96px;
+    border-radius: 50%;
+    border: 3px double currentColor;
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    margin: 0 auto 18px;
+    font-family: 'IBM Plex Mono', monospace;
+    transform: rotate(-4deg);
+  }
+  .seal.bronze { color: var(--bronze); }
+  .seal.silver { color: var(--silver); }
+  .seal.gold   { color: var(--gold); }
+  .seal .tier-label { font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase; }
+  .seal .score { font-size: 24px; font-weight: 600; }
+
+  .badge-card h2 {
+    font-family: 'Lora', serif;
+    font-size: 22px;
+    margin: 0 0 4px;
+  }
+  .verified-tag {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--verify);
+    margin: 0 0 20px;
+  }
+  .feedback {
+    font-size: 14px;
+    color: var(--ink-soft);
+    text-align: left;
+    background: var(--paper-dim);
+    border-radius: 3px;
+    padding: 14px 16px;
+    margin-bottom: 18px;
+  }
+  .draft-note {
+    font-size: 12px;
+    color: var(--ink-soft);
+    font-style: italic;
+    margin-bottom: 20px;
+  }
+  .actions { display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <p class="mark">● SkillProof — Verified Skill Protocol</p>
+    <h1>Professional English Test</h1>
+    <p class="tagline">One real task. Graded honestly. Proof you can actually share.</p>
+  </header>
+
+  <div id="test-section">
+    <p class="eyebrow">Today's task</p>
+    <p class="case-file">
+      A customer emails you, upset that their order arrived five days late.
+      Write a short, professional reply (3–5 sentences) that apologizes,
+      explains you'll look into what happened, and offers a fair next step.
+    </p>
+
+    <label for="name">Your name (optional — shown on your result)</label>
+    <input type="text" id="name" placeholder="e.g. Priya Sharma" />
+
+    <label for="answer">Your reply</label>
+    <textarea id="answer" rows="6" placeholder="Type your reply to the customer here..."></textarea>
+
+    <button id="submitBtn">Submit for grading</button>
+    <p id="status"></p>
+  </div>
+
+  <div id="result-section" style="display:none;"></div>
+</div>
+
+<script>
+// ⚠️ STEP REQUIRED BEFORE THIS WORKS:
+// Replace the text below with your own free Gemini API key from aistudio.google.com
+const API_KEY = "AQ.Ab8RN6I6wel8otSNqbIEj_AnAqNakXaRA3Z2Xk8sb-L74c617g";
+const MODEL = "gemini-2.5-flash";
+
+const TASK_TEXT = "A customer emails you, upset that their order arrived five days late. Write a short, professional reply (3-5 sentences) that apologizes, explains you'll look into what happened, and offers a fair next step.";
+
+document.getElementById('submitBtn').addEventListener('click', async () => {
+  const answer = document.getElementById('answer').value.trim();
+  const name = document.getElementById('name').value.trim() || "Anonymous";
+  const statusEl = document.getElementById('status');
+  const btn = document.getElementById('submitBtn');
+
+  if (!answer) {
+    statusEl.textContent = "Please write your reply before submitting.";
+    return;
+  }
+  if (API_KEY === "PASTE_YOUR_GEMINI_API_KEY_HERE") {
+    statusEl.textContent = "No API key set yet — paste your free Gemini key into the code first.";
+    return;
+  }
+
+  btn.disabled = true;
+  statusEl.textContent = "Grading your reply...";
+
+  const prompt = `You are a strict but fair evaluator of professional written English for job-readiness testing.
+
+TASK GIVEN TO THE CANDIDATE:
+"${TASK_TEXT}"
+
+CANDIDATE'S RESPONSE:
+"""${answer}"""
+
+Grade this on grammar & spelling, clarity & structure, professional tone, and vocabulary.
+Respond with ONLY valid JSON, no markdown formatting, no backticks, in exactly this shape:
+{"score": <integer 0-100>, "tier": "Bronze|Silver|Gold", "feedback": "<2-3 sentences of specific, constructive feedback>"}
+Tier rule: 0-59 = Bronze, 60-79 = Silver, 80-100 = Gold.`;
+
+  try {
+    const res = await fetch(
+      `https://generativelanguage.googleapis.com/v1beta/models/${MODEL}:generateContent?key=${API_KEY}`,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] })
+      }
+    );
+
+    if (!res.ok) {
+      throw new Error("API request failed: " + res.status);
+    }
+
+    const data = await res.json();
+    let raw = data.candidates[0].content.parts[0].text.trim();
+    raw = raw.replace(/```json|```/g, "").trim();
+    const result = JSON.parse(raw);
+
+    showResult(name, result);
+  } catch (err) {
+    statusEl.textContent = "Something went wrong. Check your API key and internet connection, then try again.";
+    console.error(err);
+    btn.disabled = false;
+  }
+});
+
+function showResult(name, result) {
+  document.getElementById('test-section').style.display = 'none';
+  const section = document.getElementById('result-section');
+  section.style.display = 'block';
+  const tier = (result.tier || "Bronze").toLowerCase();
+
+  section.innerHTML = `
+    <div class="badge-card">
+      <div class="seal ${tier}">
+        <span class="tier-label">${result.tier}</span>
+        <span class="score">${result.score}</span>
+      </div>
+      <h2>${name}</h2>
+      <p class="verified-tag">Verified by SkillProof — Professional English</p>
+      <div class="feedback">${result.feedback}</div>
+      <p class="draft-note">This result isn't saved yet — a permanent shareable link is coming in a later update.</p>
+      <div class="actions">
+        <button class="secondary" onclick="location.reload()">Take the test again</button>
+      </div>
+    </div>
+    <p class="eyebrow" style="text-align:center; margin-top:16px;">📸 Screenshot this card to share</p>
+  `;
+}
+</script>
+</body>
+</html>
