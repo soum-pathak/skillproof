@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>SkillProof — Verified Result</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,500;0,600;1,500&family=Inter:wght@400;500;600&family=IBM+Plex+Mono:wght@500;600&display=swap" rel="stylesheet">
+<style>
+:root {
+  --paper: #FAF7F0; --paper-dim: #F1ECDF; --ink: #1C2A3A; --ink-soft: #4A5A6B;
+  --verify: #1F6B45; --rule: #D9D2BD; --bronze: #9C6B3E; --silver: #6E7580; --gold: #A9821F;
+}
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--paper); color: var(--ink); font-family: 'Inter', sans-serif; line-height: 1.5; padding: 48px 20px 80px; }
+.wrap { max-width: 600px; margin: 0 auto; }
+.mark { font-family: 'IBM Plex Mono', monospace; font-size: 12px; letter-spacing: 0.12em; color: var(--verify); text-transform: uppercase; margin-bottom: 24px; text-align: center; }
+.badge-card { background: #fff; border: 1px solid var(--rule); border-radius: 4px; padding: 36px 28px; text-align: center; }
+.seal { width: 96px; height: 96px; border-radius: 50%; border: 3px double currentColor; display: flex; flex-direction: column; align-items: center; justify-content: center; margin: 0 auto 18px; font-family: 'IBM Plex Mono', monospace; transform: rotate(-4deg); }
+.seal.bronze { color: var(--bronze); }
+.seal.silver { color: var(--silver); }
+.seal.gold { color: var(--gold); }
+.seal .tier-label { font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase; }
+.seal .score { font-size: 24px; font-weight: 600; }
+.badge-card h2 { font-family: 'Lora', serif; font-size: 22px; margin: 0 0 4px; }
+.verified-tag { font-family: 'IBM Plex Mono', monospace; font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--verify); margin: 0 0 20px; }
+.feedback { font-size: 14px; color: var(--ink-soft); text-align: left; background: var(--paper-dim); border-radius: 3px; padding: 14px 16px; margin-bottom: 18px; }
+.cta { display: block; text-align: center; margin-top: 24px; font-family: 'IBM Plex Mono', monospace; font-size: 12px; letter-spacing: 0.04em; text-transform: uppercase; color: var(--ink); }
+#status { text-align: center; font-family: 'IBM Plex Mono', monospace; font-size: 13px; color: var(--ink-soft); }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <p class="mark">● SkillProof — Verified Skill Protocol</p>
+  <div id="content"><p id="status">Loading result...</p></div>
+  <a class="cta" href="/">Take the SkillProof test →</a>
+</div>
+<script>
+async function loadResult() {
+  const params = new URLSearchParams(window.location.search);
+  const id = params.get('id');
+  const content = document.getElementById('content');
+
+  if (!id) {
+    content.innerHTML = '<p id="status">No result ID was provided in this link.</p>';
+    return;
+  }
+
+  try {
+    const res = await fetch(`/api/result?id=${encodeURIComponent(id)}`);
+    if (!res.ok) throw new Error("Not found");
+    const result = await res.json();
+    const tier = (result.tier || "Bronze").toLowerCase();
+
+    content.innerHTML = `
+      <div class="badge-card">
+        <div class="seal ${tier}">
+          <span class="tier-label">${result.tier}</span>
+          <span class="score">${result.score}</span>
+        </div>
+        <h2>${result.name}</h2>
+        <p class="verified-tag">Verified by SkillProof — Professional English</p>
+        <div class="feedback">${result.feedback}</div>
+      </div>
+    `;
+  } catch (err) {
+    content.innerHTML = '<p id="status">This result could not be found. The link may be incorrect or the result may have been removed.</p>';
+    console.error(err);
+  }
+}
+loadResult();
+</script>
+</body>
+</html>
