@@ -238,6 +238,12 @@ document.getElementById('submitBtn').addEventListener('click', async () => {
   }
 });
 
+function escapeHtml(str) {
+  const div = document.createElement('div');
+  div.textContent = str;
+  return div.innerHTML;
+}
+
 function showResult(name, result) {
   document.getElementById('test-section').style.display = 'none';
   const section = document.getElementById('result-section');
@@ -249,12 +255,12 @@ function showResult(name, result) {
   section.innerHTML = `
     <div class="badge-card">
       <div class="seal ${tier}">
-        <span class="tier-label">${result.tier}</span>
+        <span class="tier-label">${escapeHtml(result.tier)}</span>
         <span class="score">${result.score}</span>
       </div>
-      <h2>${name}</h2>
+      <h2>${escapeHtml(name)}</h2>
       <p class="verified-tag">Verified by SkillProof — Professional English</p>
-      <div class="feedback">${result.feedback}</div>
+      <div class="feedback">${escapeHtml(result.feedback)}</div>
       <div class="actions">
         <button class="secondary" onclick="location.reload()">Take the test again</button>
       </div>
