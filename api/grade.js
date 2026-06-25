@@ -1,3 +1,29 @@
+async function callGemini(prompt) {
+  const maxAttempts = 3;
+  for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+    const geminiRes = await fetch(
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-preview:generateContent?key=${process.env.GEMINI_API_KEY}`,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] })
+      }
+    );
+
+    if (geminiRes.ok) {
+      return await geminiRes.json();
+    }
+
+    // 503 means Google's server is just temporarily busy — worth trying again.
+    // Any other error code means something is actually wrong, so stop right away.
+    if (geminiRes.status !== 503 || attempt === maxAttempts) {
+      throw new Error("Gemini request failed: " + geminiRes.status);
+    }
+
+    // Wait a little longer each retry, so we're not hammering an already-busy server
+    await new Promise(r => setTimeout(r, attempt * 2000));
+  }
+}
 export default async function handler(req, res) {
   if (req.method !== "POST") {
     return res.status(405).json({ error: "Only POST requests allowed" });
@@ -26,17 +52,7 @@ Respond with ONLY valid JSON, no markdown formatting, no backticks, in exactly t
 Tier rule: 0-59 = Bronze, 60-79 = Silver, 80-100 = Gold.`;
 
   try {
-    const geminiRes = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-preview:generateContent?key=${process.env.GEMINI_API_KEY}`,
-      {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] })
-      }
-    );
-    if (!geminiRes.ok) throw new Error("Gemini request failed: " + geminiRes.status);
-
-    const geminiData = await geminiRes.json();
+    const geminiData = await callGemini(prompt);
     let raw = geminiData.candidates[0].content.parts[0].text.trim();
     raw = raw.replace(/```json|```/g, "").trim();
     const result = JSON.parse(raw);
