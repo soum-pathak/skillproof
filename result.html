@@ -68,6 +68,44 @@ async function loadResult() {
     console.error(err);
   }
 }
+function escapeHtml(str) {
+  const div = document.createElement('div');
+  div.textContent = str;
+  return div.innerHTML;
+}
+
+async function loadResult() {
+  const params = new URLSearchParams(window.location.search);
+  const id = params.get('id');
+  const content = document.getElementById('content');
+
+  if (!id) {
+    content.innerHTML = '<p id="status">No result ID was provided in this link.</p>';
+    return;
+  }
+
+  try {
+    const res = await fetch(`/api/result?id=${encodeURIComponent(id)}`);
+    if (!res.ok) throw new Error("Not found");
+    const result = await res.json();
+    const tier = (result.tier || "Bronze").toLowerCase();
+
+    content.innerHTML = `
+      <div class="badge-card">
+        <div class="seal ${tier}">
+          <span class="tier-label">${escapeHtml(result.tier)}</span>
+          <span class="score">${result.score}</span>
+        </div>
+        <h2>${escapeHtml(result.name)}</h2>
+        <p class="verified-tag">Verified by SkillProof — Professional English</p>
+        <div class="feedback">${escapeHtml(result.feedback)}</div>
+      </div>
+    `;
+  } catch (err) {
+    content.innerHTML = '<p id="status">This result could not be found. The link may be incorrect or the result may have been removed.</p>';
+    console.error(err);
+  }
+}
 loadResult();
 </script>
 </body>
