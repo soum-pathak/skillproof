@@ -242,7 +242,9 @@ function showResult(name, result) {
   document.getElementById('test-section').style.display = 'none';
   const section = document.getElementById('result-section');
   section.style.display = 'block';
+
   const tier = (result.tier || "Bronze").toLowerCase();
+  const shareUrl = `${window.location.origin}/result.html?id=${result.id}`;
 
   section.innerHTML = `
     <div class="badge-card">
@@ -253,12 +255,15 @@ function showResult(name, result) {
       <h2>${name}</h2>
       <p class="verified-tag">Verified by SkillProof — Professional English</p>
       <div class="feedback">${result.feedback}</div>
-      <p class="draft-note">This result isn't saved yet — a permanent shareable link is coming in a later update.</p>
       <div class="actions">
         <button class="secondary" onclick="location.reload()">Take the test again</button>
       </div>
     </div>
-    <p class="eyebrow" style="text-align:center; margin-top:16px;">📸 Screenshot this card to share</p>
+    <p class="eyebrow" style="text-align:center; margin-top:16px;">Your shareable link</p>
+    <div style="display:flex; gap:8px; margin-top:8px;">
+      <input type="text" id="shareLink" value="${shareUrl}" readonly style="margin-bottom:0;" />
+      <button onclick="navigator.clipboard.writeText(document.getElementById('shareLink').value); this.textContent='Copied!'">Copy</button>
+    </div>
   `;
 }
 </script>
