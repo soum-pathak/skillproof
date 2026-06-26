@@ -66,18 +66,11 @@ Tier rule: 0-59 = Bronze, 60-79 = Silver, 80-100 = Gold.`;
         "Prefer": "return=representation"
       },
       body: JSON.stringify({
-        name: (name || "Anonymous").name: (name || "Anonymous").slice(0, 60),
-        score: result.score,
-        tier: result.tier,
-        feedback: result.feedback,
         name: (name || "Anonymous").slice(0, 60),
         score: result.score,
         tier: result.tier,
         feedback: result.feedback,
-        skill: "written-english",
-        score: result.score,
-        tier: result.tier,
-        feedback: result.feedback
+        skill: "written-english"
       })
     });
     if (!saveRes.ok) throw new Error("Supabase save failed: " + saveRes.status);
