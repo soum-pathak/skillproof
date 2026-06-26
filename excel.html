@@ -1,0 +1,372 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>SkillProof — Excel / Spreadsheets Test</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,500;0,600;1,500&family=Inter:wght@400;500;600&family=IBM+Plex+Mono:wght@500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --paper: #FAF7F0;
+    --paper-dim: #F1ECDF;
+    --ink: #1C2A3A;
+    --ink-soft: #4A5A6B;
+    --verify: #1F6B45;
+    --rule: #D9D2BD;
+    --bronze: #9C6B3E;
+    --silver: #6E7580;
+    --gold: #A9821F;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--paper);
+    color: var(--ink);
+    font-family: 'Inter', sans-serif;
+    line-height: 1.5;
+    padding: 48px 20px 80px;
+  }
+  .wrap { max-width: 600px; margin: 0 auto; }
+  header { margin-bottom: 36px; }
+  .mark {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 12px;
+    letter-spacing: 0.12em;
+    color: var(--verify);
+    text-transform: uppercase;
+    margin-bottom: 10px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  #timer {
+    color: var(--ink-soft);
+    font-variant-numeric: tabular-nums;
+  }
+  h1 {
+    font-family: 'Lora', serif;
+    font-weight: 600;
+    font-size: 34px;
+    margin: 0 0 8px;
+    color: var(--ink);
+  }
+  .tagline { color: var(--ink-soft); font-size: 15px; margin: 0; }
+
+  .eyebrow {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--ink-soft);
+    margin: 0 0 8px;
+  }
+  .case-file {
+    background: var(--paper-dim);
+    border-left: 3px solid var(--verify);
+    padding: 18px 20px;
+    font-size: 14.5px;
+    color: var(--ink);
+    margin-bottom: 24px;
+  }
+
+  table.dataset {
+    width: 100%;
+    border-collapse: collapse;
+    margin-bottom: 28px;
+    font-size: 13.5px;
+    background: #fff;
+    border: 1px solid var(--rule);
+  }
+  table.dataset th, table.dataset td {
+    border: 1px solid var(--rule);
+    padding: 8px 10px;
+    text-align: left;
+  }
+  table.dataset th {
+    background: var(--paper-dim);
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    color: var(--ink-soft);
+  }
+
+  .question {
+    margin-bottom: 24px;
+  }
+  .question .qnum {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 0.06em;
+    color: var(--verify);
+    text-transform: uppercase;
+    margin-bottom: 4px;
+  }
+  .question p.qtext {
+    font-size: 14.5px;
+    color: var(--ink);
+    margin: 0 0 8px;
+  }
+
+  label {
+    display: block;
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--ink-soft);
+    margin-bottom: 6px;
+  }
+  input, textarea {
+    width: 100%;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 14px;
+    color: var(--ink);
+    background: #fff;
+    border: 1px solid var(--rule);
+    border-radius: 3px;
+    padding: 12px 14px;
+    margin-bottom: 6px;
+    resize: vertical;
+  }
+  #name { font-family: 'Inter', sans-serif; margin-bottom: 22px; }
+  input:focus-visible, textarea:focus-visible, button:focus-visible {
+    outline: 2px solid var(--verify);
+    outline-offset: 2px;
+  }
+
+  button {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 13px;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    background: var(--ink);
+    color: var(--paper);
+    border: none;
+    border-radius: 3px;
+    padding: 13px 22px;
+    cursor: pointer;
+    margin-top: 8px;
+  }
+  button:disabled { opacity: 0.5; cursor: wait; }
+  button.secondary {
+    background: transparent;
+    color: var(--ink);
+    border: 1px solid var(--rule);
+  }
+
+  #status {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 12px;
+    color: var(--ink-soft);
+    min-height: 18px;
+  }
+
+  /* Result card */
+  .badge-card {
+    background: #fff;
+    border: 1px solid var(--rule);
+    border-radius: 4px;
+    padding: 36px 28px;
+    text-align: center;
+    position: relative;
+    animation: rise 0.4s ease-out;
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .badge-card { animation: none; }
+  }
+  @keyframes rise {
+    from { opacity: 0; transform: translateY(6px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+  .seal {
+    width: 96px; height: 96px;
+    border-radius: 50%;
+    border: 3px double currentColor;
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    margin: 0 auto 18px;
+    font-family: 'IBM Plex Mono', monospace;
+    transform: rotate(-4deg);
+  }
+  .seal.bronze { color: var(--bronze); }
+  .seal.silver { color: var(--silver); }
+  .seal.gold   { color: var(--gold); }
+  .seal .tier-label { font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase; }
+  .seal .score { font-size: 24px; font-weight: 600; }
+
+  .badge-card h2 {
+    font-family: 'Lora', serif;
+    font-size: 22px;
+    margin: 0 0 4px;
+  }
+  .verified-tag {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--verify);
+    margin: 0 0 20px;
+  }
+  .feedback {
+    font-size: 14px;
+    color: var(--ink-soft);
+    text-align: left;
+    background: var(--paper-dim);
+    border-radius: 3px;
+    padding: 14px 16px;
+    margin-bottom: 18px;
+    white-space: pre-line;
+  }
+  .actions { display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <p class="mark">
+      <span>● SkillProof — Verified Skill Protocol</span>
+      <span id="timer">00:00</span>
+    </p>
+    <h1>Excel / Spreadsheets Test</h1>
+    <p class="tagline">One real spreadsheet task. Graded honestly. Proof you can actually share.</p>
+  </header>
+
+  <div id="test-section">
+    <p class="eyebrow">Today's dataset</p>
+    <table class="dataset">
+      <thead>
+        <tr><th>Product</th><th>Region</th><th>Units Sold</th><th>Price</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>Notebook</td><td>North</td><td>120</td><td>4.50</td></tr>
+        <tr><td>Pen Set</td><td>North</td><td>340</td><td>2.20</td></tr>
+        <tr><td>Notebook</td><td>South</td><td>95</td><td>4.50</td></tr>
+        <tr><td>Stapler</td><td>South</td><td>60</td><td>7.80</td></tr>
+        <tr><td>Pen Set</td><td>East</td><td>210</td><td>2.20</td></tr>
+        <tr><td>Stapler</td><td>East</td><td>40</td><td>7.80</td></tr>
+        <tr><td>Notebook</td><td>East</td><td>150</td><td>4.50</td></tr>
+        <tr><td>Pen Set</td><td>South</td><td>75</td><td>2.20</td></tr>
+      </tbody>
+    </table>
+
+    <div class="question">
+      <p class="qnum">Question 1</p>
+      <p class="qtext">Write a formula to calculate the <strong>total revenue</strong> (Units Sold × Price) for the first row (Notebook, North).</p>
+      <label for="q1">Your formula</label>
+      <input type="text" id="q1" placeholder="e.g. =C2*D2" />
+    </div>
+
+    <div class="question">
+      <p class="qnum">Question 2</p>
+      <p class="qtext">Write a formula using <strong>SUMIF</strong> to total the Units Sold for the <strong>North</strong> region only.</p>
+      <label for="q2">Your formula</label>
+      <input type="text" id="q2" placeholder="e.g. =SUMIF(B2:B9, &quot;North&quot;, C2:C9)" />
+    </div>
+
+    <div class="question">
+      <p class="qnum">Question 3</p>
+      <p class="qtext">Write a formula using <strong>COUNTIF</strong> to count how many rows have Units Sold greater than 100.</p>
+      <label for="q3">Your formula</label>
+      <input type="text" id="q3" placeholder="e.g. =COUNTIF(C2:C9, &quot;&gt;100&quot;)" />
+    </div>
+
+    <div class="question">
+      <p class="qnum">Question 4</p>
+      <p class="qtext">Write a formula using <strong>XLOOKUP</strong> (or VLOOKUP) to find the Price of "Stapler".</p>
+      <label for="q4">Your formula</label>
+      <input type="text" id="q4" placeholder="e.g. =XLOOKUP(&quot;Stapler&quot;, A2:A9, D2:D9)" />
+    </div>
+
+    <label for="name">Your name (optional — shown on your result)</label>
+    <input type="text" id="name" placeholder="e.g. Priya Sharma" />
+
+    <button id="submitBtn">Submit for grading</button>
+    <p id="status"></p>
+  </div>
+
+  <div id="result-section" style="display:none;"></div>
+</div>
+
+<script>
+const startTime = Date.now();
+const timerEl = document.getElementById('timer');
+const timerInterval = setInterval(() => {
+  const elapsed = Math.floor((Date.now() - startTime) / 1000);
+  const mins = String(Math.floor(elapsed / 60)).padStart(2, '0');
+  const secs = String(elapsed % 60).padStart(2, '0');
+  timerEl.textContent = `${mins}:${secs}`;
+}, 1000);
+
+document.getElementById('submitBtn').addEventListener('click', async () => {
+  const q1 = document.getElementById('q1').value.trim();
+  const q2 = document.getElementById('q2').value.trim();
+  const q3 = document.getElementById('q3').value.trim();
+  const q4 = document.getElementById('q4').value.trim();
+  const name = document.getElementById('name').value.trim() || "Anonymous";
+  const statusEl = document.getElementById('status');
+  const btn = document.getElementById('submitBtn');
+
+  if (!q1 || !q2 || !q3 || !q4) {
+    statusEl.textContent = "Please answer all four questions before submitting.";
+    return;
+  }
+
+  const elapsedSeconds = Math.floor((Date.now() - startTime) / 1000);
+  clearInterval(timerInterval);
+
+  btn.disabled = true;
+  statusEl.textContent = "Grading your answers...";
+
+  try {
+    const res = await fetch('/api/grade-excel', {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ name, q1, q2, q3, q4, elapsedSeconds })
+    });
+    if (!res.ok) throw new Error("Request failed: " + res.status);
+    const result = await res.json();
+    showResult(name, result);
+  } catch (err) {
+    statusEl.textContent = "Something went wrong. Please try again.";
+    console.error(err);
+    btn.disabled = false;
+  }
+});
+
+function escapeHtml(str) {
+  const div = document.createElement('div');
+  div.textContent = str;
+  return div.innerHTML;
+}
+
+function showResult(name, result) {
+  document.getElementById('test-section').style.display = 'none';
+  const section = document.getElementById('result-section');
+  section.style.display = 'block';
+
+  const tier = (result.tier || "Bronze").toLowerCase();
+  const shareUrl = `${window.location.origin}/result.html?id=${result.id}`;
+
+  section.innerHTML = `
+    <div class="badge-card">
+      <div class="seal ${tier}">
+        <span class="tier-label">${escapeHtml(result.tier)}</span>
+        <span class="score">${result.score}</span>
+      </div>
+      <h2>${escapeHtml(name)}</h2>
+      <p class="verified-tag">Verified by SkillProof — Excel / Spreadsheets</p>
+      <div class="feedback">${escapeHtml(result.feedback)}</div>
+      <div class="actions">
+        <button class="secondary" onclick="location.reload()">Take the test again</button>
+      </div>
+    </div>
+    <p class="eyebrow" style="text-align:center; margin-top:16px;">Your shareable link</p>
+    <div style="display:flex; gap:8px; margin-top:8px;">
+      <input type="text" id="shareLink" value="${shareUrl}" readonly style="margin-bottom:0;" />
+      <button onclick="navigator.clipboard.writeText(document.getElementById('shareLink').value); this.textContent='Copied!'">Copy</button>
+    </div>
+  `;
+}
+</script>
+</body>
+  </html>
+
