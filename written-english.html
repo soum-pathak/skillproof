@@ -223,7 +223,7 @@ document.getElementById('submitBtn').addEventListener('click', async () => {
   statusEl.textContent = "Grading your reply...";
 
   try {
-    const res = await fetch('/api/grade', {
+    const res = await fetch('/api/grade-written-english', {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ name, answer })
