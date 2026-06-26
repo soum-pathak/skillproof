@@ -1,0 +1,271 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>SkillProof — Verified Skill Tests</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,500;0,600;1,500&family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --paper: #FAFAF9;
+    --paper-raised: #FFFFFF;
+    --ink: #0A0E12;
+    --ink-soft: #5B6470;
+    --ink-faint: #9AA1AB;
+    --rule: #E8E6E1;
+    --rule-strong: #D8D5CD;
+    --verify-1: #16A34A;
+    --verify-2: #0D7A3D;
+    --verify-glow: rgba(22, 163, 74, 0.16);
+  }
+
+  * { box-sizing: border-box; }
+  html { -webkit-text-size-adjust: 100%; }
+  body {
+    margin: 0;
+    background: var(--paper);
+    color: var(--ink);
+    font-family: 'Inter', -apple-system, sans-serif;
+    line-height: 1.5;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  /* subtle ambient backdrop, no banding */
+  .backdrop {
+    position: fixed;
+    inset: 0;
+    z-index: -1;
+    background:
+      radial-gradient(720px 420px at 12% -8%, var(--verify-glow), transparent 60%),
+      radial-gradient(600px 500px at 105% 18%, rgba(22,163,74,0.07), transparent 55%);
+    pointer-events: none;
+  }
+
+  .wrap {
+    max-width: 600px;
+    margin: 0 auto;
+    padding: 64px 22px 90px;
+  }
+
+  header { margin-bottom: 44px; }
+
+  .mark {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 11.5px;
+    letter-spacing: 0.1em;
+    color: var(--verify-2);
+    text-transform: uppercase;
+    margin: 0 0 22px;
+    opacity: 0;
+    animation: fadeUp 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  }
+  .mark .dot {
+    width: 6px; height: 6px; border-radius: 50%;
+    background: linear-gradient(135deg, var(--verify-1), var(--verify-2));
+    box-shadow: 0 0 0 3px var(--verify-glow);
+  }
+
+  h1 {
+    font-family: 'Lora', serif;
+    font-weight: 600;
+    font-size: clamp(30px, 6vw, 38px);
+    letter-spacing: -0.01em;
+    margin: 0 0 12px;
+    color: var(--ink);
+    opacity: 0;
+    animation: fadeUp 0.6s cubic-bezier(0.16, 1, 0.3, 1) 0.08s forwards;
+  }
+  h1 em {
+    font-style: normal;
+    background: linear-gradient(135deg, var(--verify-1), var(--verify-2));
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+  }
+
+  .tagline {
+    color: var(--ink-soft);
+    font-size: 15.5px;
+    margin: 0;
+    max-width: 420px;
+    opacity: 0;
+    animation: fadeUp 0.6s cubic-bezier(0.16, 1, 0.3, 1) 0.16s forwards;
+  }
+
+  .eyebrow {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--ink-faint);
+    margin: 0 0 16px;
+    opacity: 0;
+    animation: fadeUp 0.5s cubic-bezier(0.16, 1, 0.3, 1) 0.22s forwards;
+  }
+
+  .stack { display: flex; flex-direction: column; gap: 12px; }
+
+  .skill-card {
+    position: relative;
+    display: flex;
+    align-items: center;
+    gap: 18px;
+    background: var(--paper-raised);
+    border: 1px solid var(--rule);
+    border-radius: 14px;
+    padding: 20px 20px;
+    text-decoration: none;
+    color: var(--ink);
+    overflow: hidden;
+    opacity: 0;
+    transform: translateY(8px);
+    animation: fadeUp 0.55s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+    transition: border-color 0.35s ease, box-shadow 0.35s ease, transform 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+  .skill-card:nth-of-type(1) { animation-delay: 0.30s; }
+  .skill-card:nth-of-type(2) { animation-delay: 0.38s; }
+
+  .skill-card::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(120deg, var(--verify-glow), transparent 45%);
+    opacity: 0;
+    transition: opacity 0.35s ease;
+  }
+  .skill-card:hover, .skill-card:focus-visible {
+    border-color: var(--verify-1);
+    box-shadow: 0 8px 28px -8px rgba(13, 122, 61, 0.28), 0 1px 2px rgba(10,14,18,0.04);
+    transform: translateY(-2px);
+  }
+  .skill-card:hover::before { opacity: 1; }
+  .skill-card:focus-visible { outline: 2px solid var(--verify-1); outline-offset: 2px; }
+  .skill-card:active { transform: translateY(0); }
+
+  @media (prefers-reduced-motion: reduce) {
+    .skill-card, .mark, h1, .tagline, .eyebrow { animation: none !important; opacity: 1 !important; transform: none !important; }
+    .skill-card { transition: border-color 0.15s ease; }
+  }
+
+  .seal {
+    flex: none;
+    width: 46px; height: 46px;
+    border-radius: 50%;
+    border: 2px solid var(--rule-strong);
+    display: flex; align-items: center; justify-content: center;
+    position: relative;
+    z-index: 1;
+    transition: border-color 0.35s ease, transform 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
+  }
+  .skill-card:hover .seal {
+    border-color: var(--verify-1);
+    transform: rotate(-8deg);
+  }
+  .seal svg { width: 20px; height: 20px; stroke: var(--ink-soft); transition: stroke 0.35s ease; }
+  .skill-card:hover .seal svg { stroke: var(--verify-2); }
+
+  .card-body { flex: 1; min-width: 0; position: relative; z-index: 1; }
+  .card-body h2 {
+    font-family: 'Inter', sans-serif;
+    font-weight: 600;
+    font-size: 16.5px;
+    margin: 0 0 3px;
+    letter-spacing: -0.005em;
+  }
+  .card-body p {
+    font-size: 13.5px;
+    color: var(--ink-soft);
+    margin: 0;
+    line-height: 1.45;
+  }
+
+  .arrow {
+    flex: none;
+    width: 32px; height: 32px;
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    color: var(--ink-faint);
+    position: relative;
+    z-index: 1;
+    transition: background 0.35s ease, color 0.35s ease, transform 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+  .arrow svg { width: 15px; height: 15px; }
+  .skill-card:hover .arrow {
+    background: linear-gradient(135deg, var(--verify-1), var(--verify-2));
+    color: #fff;
+    transform: translateX(2px);
+  }
+
+  footer {
+    margin-top: 40px;
+    text-align: center;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 0.05em;
+    color: var(--ink-faint);
+    opacity: 0;
+    animation: fadeUp 0.5s cubic-bezier(0.16, 1, 0.3, 1) 0.5s forwards;
+  }
+
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(8px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+</style>
+</head>
+<body>
+<div class="backdrop"></div>
+<div class="wrap">
+  <header>
+    <p class="mark"><span class="dot"></span>SkillProof — Verified Skill Protocol</p>
+    <h1>Prove a skill.<br><em>Share the proof.</em></h1>
+    <p class="tagline">One real test per skill. Graded honestly by AI. A permanent link worth more than a line on a resume.</p>
+  </header>
+
+  <p class="eyebrow">Choose a skill to verify</p>
+
+  <div class="stack">
+    <a class="skill-card" href="/written-english.html">
+      <span class="seal" aria-hidden="true">
+        <svg viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M4 19.5V5a2 2 0 0 1 2-2h11a1 1 0 0 1 1 1v14.5"/>
+          <path d="M6.5 22A2.5 2.5 0 0 1 4 19.5h14"/>
+          <path d="M9 7h6M9 10.5h4"/>
+        </svg>
+      </span>
+      <span class="card-body">
+        <h2>Professional Written English</h2>
+        <p>Reply to a real customer-service scenario, graded on grammar, clarity, and tone.</p>
+      </span>
+      <span class="arrow" aria-hidden="true">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 5l7 7-7 7"/></svg>
+      </span>
+    </a>
+
+    <a class="skill-card" href="/excel.html">
+      <span class="seal" aria-hidden="true">
+        <svg viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="3.5" y="3.5" width="17" height="17" rx="2"/>
+          <path d="M3.5 9.5h17M9.5 3.5v17"/>
+        </svg>
+      </span>
+      <span class="card-body">
+        <h2>Excel / Spreadsheets</h2>
+        <p>Solve a real spreadsheet task, graded on formula correctness and approach.</p>
+      </span>
+      <span class="arrow" aria-hidden="true">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 5l7 7-7 7"/></svg>
+      </span>
+    </a>
+  </div>
+
+  <footer>More skills added regularly</footer>
+</div>
+</body>
+  </html>
+
