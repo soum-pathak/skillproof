@@ -161,6 +161,14 @@
     min-height: 18px;
   }
 
+  #loading {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 13px;
+    color: var(--ink-soft);
+    text-align: center;
+    padding: 40px 0;
+  }
+
   /* Result card */
   .badge-card {
     background: #fff;
@@ -230,51 +238,13 @@
     <p class="tagline">One real spreadsheet task. Graded honestly. Proof you can actually share.</p>
   </header>
 
-  <div id="test-section">
+  <div id="loading">Loading your test...</div>
+
+  <div id="test-section" style="display:none;">
     <p class="eyebrow">Today's dataset</p>
-    <table class="dataset">
-      <thead>
-        <tr><th>Product</th><th>Region</th><th>Units Sold</th><th>Price</th></tr>
-      </thead>
-      <tbody>
-        <tr><td>Notebook</td><td>North</td><td>120</td><td>4.50</td></tr>
-        <tr><td>Pen Set</td><td>North</td><td>340</td><td>2.20</td></tr>
-        <tr><td>Notebook</td><td>South</td><td>95</td><td>4.50</td></tr>
-        <tr><td>Stapler</td><td>South</td><td>60</td><td>7.80</td></tr>
-        <tr><td>Pen Set</td><td>East</td><td>210</td><td>2.20</td></tr>
-        <tr><td>Stapler</td><td>East</td><td>40</td><td>7.80</td></tr>
-        <tr><td>Notebook</td><td>East</td><td>150</td><td>4.50</td></tr>
-        <tr><td>Pen Set</td><td>South</td><td>75</td><td>2.20</td></tr>
-      </tbody>
-    </table>
+    <div id="dataset-container"></div>
 
-    <div class="question">
-      <p class="qnum">Question 1</p>
-      <p class="qtext">Write a formula to calculate the <strong>total revenue</strong> (Units Sold × Price) for the first row (Notebook, North).</p>
-      <label for="q1">Your formula</label>
-      <input type="text" id="q1" placeholder="e.g. =C2*D2" />
-    </div>
-
-    <div class="question">
-      <p class="qnum">Question 2</p>
-      <p class="qtext">Write a formula using <strong>SUMIF</strong> to total the Units Sold for the <strong>North</strong> region only.</p>
-      <label for="q2">Your formula</label>
-      <input type="text" id="q2" placeholder="e.g. =SUMIF(B2:B9, &quot;North&quot;, C2:C9)" />
-    </div>
-
-    <div class="question">
-      <p class="qnum">Question 3</p>
-      <p class="qtext">Write a formula using <strong>COUNTIF</strong> to count how many rows have Units Sold greater than 100.</p>
-      <label for="q3">Your formula</label>
-      <input type="text" id="q3" placeholder="e.g. =COUNTIF(C2:C9, &quot;&gt;100&quot;)" />
-    </div>
-
-    <div class="question">
-      <p class="qnum">Question 4</p>
-      <p class="qtext">Write a formula using <strong>XLOOKUP</strong> (or VLOOKUP) to find the Price of "Stapler".</p>
-      <label for="q4">Your formula</label>
-      <input type="text" id="q4" placeholder="e.g. =XLOOKUP(&quot;Stapler&quot;, A2:A9, D2:D9)" />
-    </div>
+    <div id="questions-container"></div>
 
     <label for="name">Your name (optional — shown on your result)</label>
     <input type="text" id="name" placeholder="e.g. Priya Sharma" />
@@ -287,14 +257,85 @@
 </div>
 
 <script>
-const startTime = Date.now();
-const timerEl = document.getElementById('timer');
-const timerInterval = setInterval(() => {
-  const elapsed = Math.floor((Date.now() - startTime) / 1000);
-  const mins = String(Math.floor(elapsed / 60)).padStart(2, '0');
-  const secs = String(elapsed % 60).padStart(2, '0');
-  timerEl.textContent = `${mins}:${secs}`;
-}, 1000);
+let testId = null;
+let startTime = null;
+let timerInterval = null;
+
+function escapeHtml(str) {
+  const div = document.createElement('div');
+  div.textContent = str;
+  return div.innerHTML;
+}
+
+// Turns the markdown-style table text Gemini generated into an actual HTML table.
+function renderDatasetTable(datasetText, columnMap) {
+  const lines = datasetText.trim().split("\n").filter(l => l.trim().length > 0);
+  let html = '<table class="dataset"><thead><tr>';
+  const headerCells = lines[0].split("|").map(c => c.trim()).filter(c => c.length > 0);
+  headerCells.forEach(cell => { html += `<th>${escapeHtml(cell)}</th>`; });
+  html += '</tr></thead><tbody>';
+
+  for (let i = 1; i < lines.length; i++) {
+    const cells = lines[i].split("|").map(c => c.trim()).filter(c => c.length > 0);
+    if (cells.length !== headerCells.length) continue; // skip stray separator lines
+    html += '<tr>';
+    cells.forEach(cell => { html += `<td>${escapeHtml(cell)}</td>`; });
+    html += '</tr>';
+  }
+  html += '</tbody></table>';
+
+  if (columnMap) {
+    html += `<p class="case-file">${escapeHtml(columnMap)}</p>`;
+  }
+  return html;
+}
+
+function renderQuestions(questions) {
+  let html = '';
+  questions.forEach((q, i) => {
+    html += `
+      <div class="question">
+        <p class="qnum">Question ${q.qnum} &middot; ${escapeHtml(q.label)}</p>
+        <p class="qtext">${escapeHtml(q.text)}</p>
+        <label for="q${q.qnum}">Your formula</label>
+        <input type="text" id="q${q.qnum}" placeholder="e.g. =SUM(...)" />
+      </div>
+    `;
+  });
+  return html;
+}
+
+async function loadTest() {
+  try {
+    const res = await fetch('/api/get-test?skill=excel');
+    if (!res.ok) throw new Error("Request failed: " + res.status);
+    const data = await res.json();
+
+    testId = data.testId;
+    document.getElementById('dataset-container').innerHTML =
+      renderDatasetTable(data.questions.datasetText, data.questions.columnMap);
+    document.getElementById('questions-container').innerHTML =
+      renderQuestions(data.questions.questions);
+
+    document.getElementById('loading').style.display = 'none';
+    document.getElementById('test-section').style.display = 'block';
+
+    startTime = Date.now();
+    const timerEl = document.getElementById('timer');
+    timerInterval = setInterval(() => {
+      const elapsed = Math.floor((Date.now() - startTime) / 1000);
+      const mins = String(Math.floor(elapsed / 60)).padStart(2, '0');
+      const secs = String(elapsed % 60).padStart(2, '0');
+      timerEl.textContent = `${mins}:${secs}`;
+    }, 1000);
+  } catch (err) {
+    console.error(err);
+    document.getElementById('loading').textContent =
+      "Couldn't load a test right now. Please refresh the page to try again.";
+  }
+}
+
+loadTest();
 
 document.getElementById('submitBtn').addEventListener('click', async () => {
   const q1 = document.getElementById('q1').value.trim();
@@ -320,7 +361,7 @@ document.getElementById('submitBtn').addEventListener('click', async () => {
     const res = await fetch('/api/grade-excel', {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ name, q1, q2, q3, q4, elapsedSeconds })
+      body: JSON.stringify({ name, testId, q1, q2, q3, q4, elapsedSeconds })
     });
     if (!res.ok) throw new Error("Request failed: " + res.status);
     const result = await res.json();
@@ -331,12 +372,6 @@ document.getElementById('submitBtn').addEventListener('click', async () => {
     btn.disabled = false;
   }
 });
-
-function escapeHtml(str) {
-  const div = document.createElement('div');
-  div.textContent = str;
-  return div.innerHTML;
-}
 
 function showResult(name, result) {
   document.getElementById('test-section').style.display = 'none';
@@ -368,5 +403,5 @@ function showResult(name, result) {
 }
 </script>
 </body>
-  </html>
+</html>
 
