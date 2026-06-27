@@ -4,7 +4,7 @@
 // files (get-test.js) import and call directly. No browser ever reaches this
 // file, and it never gets its own URL.
 
-import { getTemplate } from "./templates.js";
+import { getTemplate, splitGeneratedOutput } from "./templates.js";
 
 async function callGemini(prompt) {
   const maxAttempts = 3;
@@ -55,6 +55,14 @@ export async function generateOneAssessment(skill) {
       scenarioText: generated.scenarioText
     };
     answerKey = generated.rubric;
+  } else if (template.privateFields) {
+    // Generic path for any skill whose template declares which top-level
+    // fields are private (e.g. "sql", and any skill added after it).
+    // This means adding a new skill never requires a new branch here —
+    // only a new entry in templates.js with its own privateFields.
+    const split = splitGeneratedOutput(template, generated);
+    questions = split.questions;
+    answerKey = split.answerKey;
   } else {
     throw new Error(`generateOneAssessment: unknown skill "${skill}"`);
   }
@@ -98,5 +106,4 @@ export async function generateBatch(skill, count) {
     }
   }
   return results;
-    }
-      
+}
