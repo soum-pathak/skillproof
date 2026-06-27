@@ -6,19 +6,34 @@
 <title>SkillProof — Verified Skill Tests</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,500;0,600;1,500&family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@500;600&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,500;0,600;0,700;1,500&family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@500;600&display=swap" rel="stylesheet">
 <style>
   :root {
+    /* ---- color tokens ---- */
     --paper: #FAFAF9;
     --paper-raised: #FFFFFF;
     --ink: #0A0E12;
     --ink-soft: #5B6470;
     --ink-faint: #9AA1AB;
+    --ink-mist: #C7C9CD;       /* new: lightest gray step, for hairlines on raised surfaces */
     --rule: #E8E6E1;
     --rule-strong: #D8D5CD;
     --verify-1: #16A34A;
     --verify-2: #0D7A3D;
     --verify-glow: rgba(22, 163, 74, 0.16);
+    --seal-surface: #10151B;  /* new: near-black surface for the proof badge */
+    --seal-line: #2A323C;     /* new: hairline on the dark surface */
+
+    /* ---- spacing scale (4px base) ---- */
+    --sp-1: 4px;
+    --sp-2: 8px;
+    --sp-3: 12px;
+    --sp-4: 16px;
+    --sp-6: 24px;
+    --sp-8: 32px;
+    --sp-12: 48px;
+    --sp-16: 64px;
+    --sp-24: 96px;
   }
 
   * { box-sizing: border-box; }
@@ -32,7 +47,6 @@
     -webkit-font-smoothing: antialiased;
   }
 
-  /* subtle ambient backdrop, no banding */
   .backdrop {
     position: fixed;
     inset: 0;
@@ -44,12 +58,22 @@
   }
 
   .wrap {
-    max-width: 600px;
+    max-width: 1040px;
     margin: 0 auto;
-    padding: 64px 22px 90px;
+    padding: var(--sp-16) var(--sp-6) var(--sp-24);
   }
 
-  header { margin-bottom: 44px; }
+  /* ---------- HERO: two-part layout ---------- */
+  .hero {
+    display: grid;
+    grid-template-columns: 1.15fr 0.85fr;
+    gap: var(--sp-16);
+    align-items: center;
+    margin-bottom: var(--sp-24);
+  }
+  /* mobile hero rules consolidated below, near .proof-badge */
+
+  .hero-text { max-width: 480px; }
 
   .mark {
     display: inline-flex;
@@ -60,7 +84,7 @@
     letter-spacing: 0.1em;
     color: var(--verify-2);
     text-transform: uppercase;
-    margin: 0 0 22px;
+    margin: 0 0 var(--sp-6);
     opacity: 0;
     animation: fadeUp 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards;
   }
@@ -73,9 +97,10 @@
   h1 {
     font-family: 'Lora', serif;
     font-weight: 600;
-    font-size: clamp(30px, 6vw, 38px);
-    letter-spacing: -0.01em;
-    margin: 0 0 12px;
+    font-size: clamp(32px, 5vw, 44px);
+    line-height: 1.12;
+    letter-spacing: -0.015em;
+    margin: 0 0 var(--sp-4);
     color: var(--ink);
     opacity: 0;
     animation: fadeUp 0.6s cubic-bezier(0.16, 1, 0.3, 1) 0.08s forwards;
@@ -90,45 +115,188 @@
 
   .tagline {
     color: var(--ink-soft);
-    font-size: 15.5px;
-    margin: 0;
+    font-size: 16px;
+    margin: 0 0 var(--sp-8);
     max-width: 420px;
     opacity: 0;
     animation: fadeUp 0.6s cubic-bezier(0.16, 1, 0.3, 1) 0.16s forwards;
   }
 
+  .hero-stats {
+    display: flex;
+    gap: var(--sp-8);
+    opacity: 0;
+    animation: fadeUp 0.6s cubic-bezier(0.16, 1, 0.3, 1) 0.22s forwards;
+  }
+  .hero-stat { }
+  .hero-stat .num {
+    font-family: 'Lora', serif;
+    font-weight: 600;
+    font-size: 22px;
+    color: var(--ink);
+    display: block;
+    line-height: 1.2;
+  }
+  .hero-stat .label {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 10.5px;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--ink-faint);
+  }
+
+  /* ---------- SIGNATURE ELEMENT: the proof badge ---------- */
+  .badge-stage {
+    display: flex;
+    justify-content: center;
+    opacity: 0;
+    animation: fadeUp 0.7s cubic-bezier(0.16, 1, 0.3, 1) 0.3s forwards;
+  }
+
+  .proof-badge {
+    width: 100%;
+    max-width: 268px;
+    background: var(--seal-surface);
+    border-radius: 16px;
+    padding: var(--sp-6);
+    transform: rotate(-2.5deg);
+    box-shadow:
+      0 16px 32px -14px rgba(10, 14, 18, 0.32),
+      0 2px 4px rgba(10, 14, 18, 0.16);
+    transition: transform 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
+    position: relative;
+  }
+  .proof-badge:hover { transform: rotate(-1deg) translateY(-3px); }
+
+  .proof-badge::after {
+    /* faint corner fold / certificate cue */
+    content: "";
+    position: absolute;
+    top: 0; right: 0;
+    width: 30px; height: 30px;
+    background: linear-gradient(135deg, transparent 50%, rgba(255,255,255,0.04) 50%);
+    border-radius: 0 16px 0 0;
+  }
+
+  .proof-top {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding-bottom: var(--sp-3);
+    margin-bottom: var(--sp-4);
+    border-bottom: 1px solid var(--seal-line);
+  }
+  .proof-brand {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 9.5px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: #6B7785;
+  }
+  .proof-seal {
+    width: 30px; height: 30px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, var(--verify-1), var(--verify-2));
+    display: flex; align-items: center; justify-content: center;
+    box-shadow: 0 0 0 3px rgba(22,163,74,0.18);
+  }
+  .proof-seal svg { width: 15px; height: 15px; stroke: #fff; stroke-width: 2.5; }
+
+  .proof-skill {
+    font-family: 'Lora', serif;
+    font-weight: 600;
+    font-size: 17px;
+    color: #F4F5F6;
+    margin: 0 0 var(--sp-1);
+  }
+  .proof-name {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 11px;
+    color: #6B7785;
+    margin: 0 0 var(--sp-4);
+  }
+
+  .proof-score-row {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    margin-bottom: var(--sp-3);
+  }
+  .proof-score {
+    font-family: 'Lora', serif;
+    font-weight: 700;
+    font-size: 29px;
+    color: #F4F5F6;
+    line-height: 1;
+  }
+  .proof-score span { font-size: 16px; color: #6B7785; font-weight: 500; }
+  .proof-tier {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--verify-1);
+    background: rgba(22,163,74,0.14);
+    padding: 4px 9px;
+    border-radius: 20px;
+  }
+
+  .proof-bar {
+    height: 5px;
+    border-radius: 3px;
+    background: var(--seal-line);
+    overflow: hidden;
+    margin-bottom: var(--sp-3);
+  }
+  .proof-bar span {
+    display: block;
+    height: 100%;
+    width: 91%;
+    background: linear-gradient(90deg, var(--verify-1), var(--verify-2));
+    border-radius: 3px;
+  }
+
+  .proof-foot {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 9px;
+    letter-spacing: 0.04em;
+    color: #4A5560;
+  }
+
+  @media (max-width: 860px) {
+    .hero { grid-template-columns: 1fr; gap: var(--sp-8); margin-bottom: var(--sp-16); }
+    .badge-stage { order: -1; margin-bottom: var(--sp-2); }
+    .proof-badge { max-width: 190px; transform: rotate(-2deg); padding: var(--sp-4); }
+    .proof-score { font-size: 22px; }
+    .proof-skill { font-size: 14px; }
+  }
+
+  /* ---------- skills section ---------- */
   .eyebrow {
     font-family: 'IBM Plex Mono', monospace;
     font-size: 11px;
     letter-spacing: 0.1em;
     text-transform: uppercase;
     color: var(--ink-faint);
-    margin: 0 0 16px;
-    opacity: 0;
-    animation: fadeUp 0.5s cubic-bezier(0.16, 1, 0.3, 1) 0.22s forwards;
+    margin: 0 0 var(--sp-4);
   }
 
-  .stack { display: flex; flex-direction: column; gap: 12px; }
+  .stack { display: flex; flex-direction: column; gap: var(--sp-3); max-width: 680px; }
 
   .skill-card {
     position: relative;
     display: flex;
     align-items: center;
-    gap: 18px;
+    gap: var(--sp-4);
     background: var(--paper-raised);
     border: 1px solid var(--rule);
     border-radius: 14px;
-    padding: 20px 20px;
+    padding: var(--sp-4) var(--sp-4);
     text-decoration: none;
     color: var(--ink);
     overflow: hidden;
-    opacity: 0;
-    transform: translateY(8px);
-    animation: fadeUp 0.55s cubic-bezier(0.16, 1, 0.3, 1) forwards;
     transition: border-color 0.35s ease, box-shadow 0.35s ease, transform 0.35s cubic-bezier(0.16, 1, 0.3, 1);
   }
-  .skill-card:nth-of-type(1) { animation-delay: 0.30s; }
-  .skill-card:nth-of-type(2) { animation-delay: 0.38s; }
 
   .skill-card::before {
     content: "";
@@ -148,13 +316,15 @@
   .skill-card:active { transform: translateY(0); }
 
   @media (prefers-reduced-motion: reduce) {
-    .skill-card, .mark, h1, .tagline, .eyebrow { animation: none !important; opacity: 1 !important; transform: none !important; }
+    .skill-card, .mark, h1, .tagline, .eyebrow, .hero-stats, .badge-stage, .proof-badge {
+      animation: none !important; opacity: 1 !important; transform: none !important;
+    }
     .skill-card { transition: border-color 0.15s ease; }
   }
 
   .seal {
     flex: none;
-    width: 46px; height: 46px;
+    width: 44px; height: 44px;
     border-radius: 50%;
     border: 2px solid var(--rule-strong);
     display: flex; align-items: center; justify-content: center;
@@ -166,23 +336,33 @@
     border-color: var(--verify-1);
     transform: rotate(-8deg);
   }
-  .seal svg { width: 20px; height: 20px; stroke: var(--ink-soft); transition: stroke 0.35s ease; }
+  .seal svg { width: 19px; height: 19px; stroke: var(--ink-soft); transition: stroke 0.35s ease; }
   .skill-card:hover .seal svg { stroke: var(--verify-2); }
 
   .card-body { flex: 1; min-width: 0; position: relative; z-index: 1; }
   .card-body h2 {
     font-family: 'Inter', sans-serif;
     font-weight: 600;
-    font-size: 16.5px;
+    font-size: 16px;
     margin: 0 0 3px;
     letter-spacing: -0.005em;
   }
   .card-body p {
     font-size: 13.5px;
     color: var(--ink-soft);
-    margin: 0;
+    margin: 0 0 7px;
     line-height: 1.45;
   }
+  .card-meta {
+    display: flex;
+    gap: var(--sp-3);
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 10.5px;
+    letter-spacing: 0.03em;
+    color: var(--ink-faint);
+  }
+  .card-meta span { display: inline-flex; align-items: center; gap: 4px; }
+  .card-meta svg { width: 11px; height: 11px; stroke: var(--ink-faint); }
 
   .arrow {
     flex: none;
@@ -201,16 +381,24 @@
     transform: translateX(2px);
   }
 
+  /* ---------- footer ---------- */
   footer {
-    margin-top: 40px;
-    text-align: center;
+    margin-top: var(--sp-16);
+    padding-top: var(--sp-8);
+    border-top: 1px solid var(--rule);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: var(--sp-3);
+  }
+  .footer-line {
     font-family: 'IBM Plex Mono', monospace;
     font-size: 11px;
-    letter-spacing: 0.05em;
+    letter-spacing: 0.04em;
     color: var(--ink-faint);
-    opacity: 0;
-    animation: fadeUp 0.5s cubic-bezier(0.16, 1, 0.3, 1) 0.5s forwards;
   }
+  .footer-line strong { color: var(--ink-soft); font-weight: 600; }
 
   @keyframes fadeUp {
     from { opacity: 0; transform: translateY(8px); }
@@ -221,51 +409,102 @@
 <body>
 <div class="backdrop"></div>
 <div class="wrap">
-  <header>
-    <p class="mark"><span class="dot"></span>SkillProof — Verified Skill Protocol</p>
-    <h1>Prove a skill.<br><em>Share the proof.</em></h1>
-    <p class="tagline">One real test per skill. Graded honestly by AI. A permanent link worth more than a line on a resume.</p>
-  </header>
 
-  <p class="eyebrow">Choose a skill to verify</p>
+  <section class="hero">
+    <div class="hero-text">
+      <p class="mark"><span class="dot"></span>SkillProof — Verified Skill Protocol</p>
+      <h1>Prove a skill.<br><em>Share the proof.</em></h1>
+      <p class="tagline">One real test per skill. Graded honestly by AI. A permanent link worth more than a line on a resume.</p>
+      <div class="hero-stats">
+        <div class="hero-stat">
+          <span class="num">2</span>
+          <span class="label">Skills live</span>
+        </div>
+        <div class="hero-stat">
+          <span class="num">&lt;10min</span>
+          <span class="label">Per test</span>
+        </div>
+        <div class="hero-stat">
+          <span class="num">100%</span>
+          <span class="label">Free to verify</span>
+        </div>
+      </div>
+    </div>
 
-  <div class="stack">
-    <a class="skill-card" href="/written-english.html">
-      <span class="seal" aria-hidden="true">
-        <svg viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-          <path d="M4 19.5V5a2 2 0 0 1 2-2h11a1 1 0 0 1 1 1v14.5"/>
-          <path d="M6.5 22A2.5 2.5 0 0 1 4 19.5h14"/>
-          <path d="M9 7h6M9 10.5h4"/>
-        </svg>
-      </span>
-      <span class="card-body">
-        <h2>Professional Written English</h2>
-        <p>Reply to a real customer-service scenario, graded on grammar, clarity, and tone.</p>
-      </span>
-      <span class="arrow" aria-hidden="true">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 5l7 7-7 7"/></svg>
-      </span>
-    </a>
+    <div class="badge-stage">
+      <div class="proof-badge" aria-hidden="true">
+        <div class="proof-top">
+          <span class="proof-brand">SkillProof · Verified</span>
+          <span class="proof-seal">
+            <svg viewBox="0 0 24 24" fill="none" stroke-linecap="round" stroke-linejoin="round"><path d="M5 13l4 4L19 7"/></svg>
+          </span>
+        </div>
+        <p class="proof-skill">Excel / Spreadsheets</p>
+        <p class="proof-name">Sample result · illustrative</p>
+        <div class="proof-score-row">
+          <span class="proof-score">91<span>/100</span></span>
+          <span class="proof-tier">Advanced</span>
+        </div>
+        <div class="proof-bar"><span></span></div>
+        <p class="proof-foot">skillproof-murex.vercel.app/r/8f2c1a</p>
+      </div>
+    </div>
+  </section>
 
-    <a class="skill-card" href="/excel.html">
-      <span class="seal" aria-hidden="true">
-        <svg viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-          <rect x="3.5" y="3.5" width="17" height="17" rx="2"/>
-          <path d="M3.5 9.5h17M9.5 3.5v17"/>
-        </svg>
-      </span>
-      <span class="card-body">
-        <h2>Excel / Spreadsheets</h2>
-        <p>Solve a real spreadsheet task, graded on formula correctness and approach.</p>
-      </span>
-      <span class="arrow" aria-hidden="true">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 5l7 7-7 7"/></svg>
-      </span>
-    </a>
-  </div>
+  <section>
+    <p class="eyebrow">Choose a skill to verify</p>
 
-  <footer>More skills added regularly</footer>
+    <div class="stack">
+      <a class="skill-card" href="/written-english.html">
+        <span class="seal" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M4 19.5V5a2 2 0 0 1 2-2h11a1 1 0 0 1 1 1v14.5"/>
+            <path d="M6.5 22A2.5 2.5 0 0 1 4 19.5h14"/>
+            <path d="M9 7h6M9 10.5h4"/>
+          </svg>
+        </span>
+        <span class="card-body">
+          <h2>Professional Written English</h2>
+          <p>Reply to a real customer-service scenario, graded on grammar, clarity, and tone.</p>
+          <span class="card-meta">
+            <span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 3"/></svg>~6 min</span>
+            <span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>1 task</span>
+          </span>
+        </span>
+        <span class="arrow" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 5l7 7-7 7"/></svg>
+        </span>
+      </a>
+
+      <a class="skill-card" href="/excel.html">
+        <span class="seal" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="3.5" y="3.5" width="17" height="17" rx="2"/>
+            <path d="M3.5 9.5h17M9.5 3.5v17"/>
+          </svg>
+        </span>
+        <span class="card-body">
+          <h2>Excel / Spreadsheets</h2>
+          <p>Solve a real spreadsheet task, graded on formula correctness and approach.</p>
+          <span class="card-meta">
+            <span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 3"/></svg>~8 min</span>
+            <span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>4 tasks</span>
+          </span>
+        </span>
+        <span class="arrow" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 5l7 7-7 7"/></svg>
+        </span>
+      </a>
+    </div>
+  </section>
+
+  <footer>
+    <span class="footer-line"><strong>SkillProof</strong> — verified by AI, not self-reported</span>
+    <span class="footer-line">More skills added regularly</span>
+  </footer>
 </div>
 </body>
-  </html>
+</html>
+
+
 
