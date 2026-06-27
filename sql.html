@@ -1,0 +1,447 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>SkillProof — SQL Test</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,500;0,600;1,500&family=Inter:wght@400;500;600&family=IBM+Plex+Mono:wght@500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --paper: #FAF7F0;
+    --paper-dim: #F1ECDF;
+    --ink: #1C2A3A;
+    --ink-soft: #4A5A6B;
+    --verify: #1F6B45;
+    --rule: #D9D2BD;
+    --bronze: #9C6B3E;
+    --silver: #6E7580;
+    --gold: #A9821F;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--paper);
+    color: var(--ink);
+    font-family: 'Inter', sans-serif;
+    line-height: 1.5;
+    padding: 48px 20px 80px;
+  }
+  .wrap { max-width: 600px; margin: 0 auto; }
+  header { margin-bottom: 36px; }
+  .mark {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 12px;
+    letter-spacing: 0.12em;
+    color: var(--verify);
+    text-transform: uppercase;
+    margin-bottom: 10px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  #timer {
+    color: var(--ink-soft);
+    font-variant-numeric: tabular-nums;
+  }
+  h1 {
+    font-family: 'Lora', serif;
+    font-weight: 600;
+    font-size: 34px;
+    margin: 0 0 8px;
+    color: var(--ink);
+  }
+  .tagline { color: var(--ink-soft); font-size: 15px; margin: 0; }
+
+  .eyebrow {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--ink-soft);
+    margin: 0 0 8px;
+  }
+  .case-file {
+    background: var(--paper-dim);
+    border-left: 3px solid var(--verify);
+    padding: 18px 20px;
+    font-size: 14.5px;
+    color: var(--ink);
+    margin-bottom: 24px;
+  }
+
+  .table-block { margin-bottom: 22px; }
+  .table-name {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 11.5px;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--ink-soft);
+    margin: 0 0 6px;
+  }
+  table.dataset {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13px;
+    background: #fff;
+    border: 1px solid var(--rule);
+  }
+  table.dataset th, table.dataset td {
+    border: 1px solid var(--rule);
+    padding: 7px 9px;
+    text-align: left;
+    white-space: nowrap;
+  }
+  table.dataset th {
+    background: var(--paper-dim);
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 10.5px;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    color: var(--ink-soft);
+  }
+  .table-scroll { overflow-x: auto; }
+
+  .question {
+    margin-bottom: 24px;
+  }
+  .question .qnum {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 0.06em;
+    color: var(--verify);
+    text-transform: uppercase;
+    margin-bottom: 4px;
+  }
+  .question p.qtext {
+    font-size: 14.5px;
+    color: var(--ink);
+    margin: 0 0 8px;
+  }
+
+  label {
+    display: block;
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--ink-soft);
+    margin-bottom: 6px;
+  }
+  input, textarea {
+    width: 100%;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 14px;
+    color: var(--ink);
+    background: #fff;
+    border: 1px solid var(--rule);
+    border-radius: 3px;
+    padding: 12px 14px;
+    margin-bottom: 6px;
+    resize: vertical;
+  }
+  textarea.sql-input { min-height: 64px; }
+  #name { font-family: 'Inter', sans-serif; margin-bottom: 22px; }
+  input:focus-visible, textarea:focus-visible, button:focus-visible {
+    outline: 2px solid var(--verify);
+    outline-offset: 2px;
+  }
+
+  button {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 13px;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    background: var(--ink);
+    color: var(--paper);
+    border: none;
+    border-radius: 3px;
+    padding: 13px 22px;
+    cursor: pointer;
+    margin-top: 8px;
+  }
+  button:disabled { opacity: 0.5; cursor: wait; }
+  button.secondary {
+    background: transparent;
+    color: var(--ink);
+    border: 1px solid var(--rule);
+  }
+
+  #status {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 12px;
+    color: var(--ink-soft);
+    min-height: 18px;
+  }
+
+  #loading {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 13px;
+    color: var(--ink-soft);
+    text-align: center;
+    padding: 40px 0;
+  }
+
+  /* Result card */
+  .badge-card {
+    background: #fff;
+    border: 1px solid var(--rule);
+    border-radius: 4px;
+    padding: 36px 28px;
+    text-align: center;
+    position: relative;
+    animation: rise 0.4s ease-out;
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .badge-card { animation: none; }
+  }
+  @keyframes rise {
+    from { opacity: 0; transform: translateY(6px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+  .seal {
+    width: 96px; height: 96px;
+    border-radius: 50%;
+    border: 3px double currentColor;
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    margin: 0 auto 18px;
+    font-family: 'IBM Plex Mono', monospace;
+    transform: rotate(-4deg);
+  }
+  .seal.bronze { color: var(--bronze); }
+  .seal.silver { color: var(--silver); }
+  .seal.gold   { color: var(--gold); }
+  .seal .tier-label { font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase; }
+  .seal .score { font-size: 24px; font-weight: 600; }
+
+  .badge-card h2 {
+    font-family: 'Lora', serif;
+    font-size: 22px;
+    margin: 0 0 4px;
+  }
+  .verified-tag {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--verify);
+    margin: 0 0 20px;
+  }
+  .feedback {
+    font-size: 14px;
+    color: var(--ink-soft);
+    text-align: left;
+    background: var(--paper-dim);
+    border-radius: 3px;
+    padding: 14px 16px;
+    margin-bottom: 18px;
+    white-space: pre-line;
+  }
+  .actions { display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <p class="mark">
+      <span>● SkillProof — Verified Skill Protocol</span>
+      <span id="timer">00:00</span>
+    </p>
+    <h1>SQL Test</h1>
+    <p class="tagline">One real query task. Graded honestly. Proof you can actually share.</p>
+  </header>
+
+  <div id="loading">Loading your test...</div>
+
+  <div id="test-section" style="display:none;">
+    <p class="eyebrow">Today's scenario</p>
+    <div id="scenario-container"></div>
+
+    <p class="eyebrow">Tables</p>
+    <div id="tables-container"></div>
+
+    <div id="questions-container"></div>
+
+    <label for="name">Your name (optional — shown on your result)</label>
+    <input type="text" id="name" placeholder="e.g. Priya Sharma" />
+
+    <button id="submitBtn">Submit for grading</button>
+    <p id="status"></p>
+  </div>
+
+  <div id="result-section" style="display:none;"></div>
+</div>
+
+<script>
+let testId = null;
+let startTime = null;
+let timerInterval = null;
+
+function escapeHtml(str) {
+  const div = document.createElement('div');
+  div.textContent = str;
+  return div.innerHTML;
+}
+
+// Renders the scenario title + context as a case-file callout, same visual
+// pattern excel.html uses for its columnMap note.
+function renderScenario(scenario) {
+  if (!scenario) return '';
+  return `
+    <p class="case-file">
+      <strong>${escapeHtml(scenario.title || '')}</strong><br/>
+      ${escapeHtml(scenario.context || '')}
+    </p>
+  `;
+}
+
+// Tables arrive as real structured JSON (not markdown text like excel.html's
+// dataset), so this builds each <table> directly from columns/rows — one
+// table block per entry in the tables array, stacked vertically.
+function renderTables(tables) {
+  if (!Array.isArray(tables)) return '';
+  let html = '';
+  tables.forEach(table => {
+    const colNames = (table.columns || []).map(c => c.name);
+    html += `<div class="table-block">`;
+    html += `<p class="table-name">${escapeHtml(table.name || '')}</p>`;
+    html += `<div class="table-scroll"><table class="dataset"><thead><tr>`;
+    colNames.forEach(name => { html += `<th>${escapeHtml(name)}</th>`; });
+    html += `</tr></thead><tbody>`;
+    (table.rows || []).forEach(row => {
+      html += '<tr>';
+      colNames.forEach(name => {
+        const val = row[name];
+        html += `<td>${escapeHtml(val === null || val === undefined ? '' : String(val))}</td>`;
+      });
+      html += '</tr>';
+    });
+    html += `</tbody></table></div></div>`;
+  });
+  return html;
+}
+
+const TYPE_LABELS = {
+  select_filter: "Filter",
+  join: "Join",
+  group_by_aggregate: "Group & Aggregate",
+  advanced: "Advanced"
+};
+
+function renderQuestions(questions) {
+  if (!Array.isArray(questions)) return '';
+  let html = '';
+  questions.forEach((q, i) => {
+    const num = i + 1;
+    const label = TYPE_LABELS[q.type] || q.type || '';
+    html += `
+      <div class="question">
+        <p class="qnum">Question ${num} &middot; ${escapeHtml(label)}</p>
+        <p class="qtext">${escapeHtml(q.prompt || '')}</p>
+        <label for="q${num}">Your SQL query</label>
+        <textarea class="sql-input" id="q${num}" placeholder="SELECT ..."></textarea>
+      </div>
+    `;
+  });
+  return html;
+}
+
+async function loadTest() {
+  try {
+    const res = await fetch('/api/get-test?skill=sql');
+    if (!res.ok) throw new Error("Request failed: " + res.status);
+    const data = await res.json();
+
+    testId = data.testId;
+    document.getElementById('scenario-container').innerHTML =
+      renderScenario(data.questions.scenario);
+    document.getElementById('tables-container').innerHTML =
+      renderTables(data.questions.tables);
+    document.getElementById('questions-container').innerHTML =
+      renderQuestions(data.questions.questions);
+
+    document.getElementById('loading').style.display = 'none';
+    document.getElementById('test-section').style.display = 'block';
+
+    startTime = Date.now();
+    const timerEl = document.getElementById('timer');
+    timerInterval = setInterval(() => {
+      const elapsed = Math.floor((Date.now() - startTime) / 1000);
+      const mins = String(Math.floor(elapsed / 60)).padStart(2, '0');
+      const secs = String(elapsed % 60).padStart(2, '0');
+      timerEl.textContent = `${mins}:${secs}`;
+    }, 1000);
+  } catch (err) {
+    console.error(err);
+    document.getElementById('loading').textContent =
+      "Couldn't load a test right now. Please refresh the page to try again.";
+  }
+}
+
+loadTest();
+
+document.getElementById('submitBtn').addEventListener('click', async () => {
+  const q1 = document.getElementById('q1').value.trim();
+  const q2 = document.getElementById('q2').value.trim();
+  const q3 = document.getElementById('q3').value.trim();
+  const q4 = document.getElementById('q4').value.trim();
+  const name = document.getElementById('name').value.trim() || "Anonymous";
+  const statusEl = document.getElementById('status');
+  const btn = document.getElementById('submitBtn');
+
+  if (!q1 || !q2 || !q3 || !q4) {
+    statusEl.textContent = "Please answer all four questions before submitting.";
+    return;
+  }
+
+  const elapsedSeconds = Math.floor((Date.now() - startTime) / 1000);
+  clearInterval(timerInterval);
+
+  btn.disabled = true;
+  statusEl.textContent = "Grading your answers...";
+
+  try {
+    const res = await fetch('/api/grade-sql', {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ name, testId, q1, q2, q3, q4, elapsedSeconds })
+    });
+    if (!res.ok) throw new Error("Request failed: " + res.status);
+    const result = await res.json();
+    showResult(name, result);
+  } catch (err) {
+    statusEl.textContent = "Something went wrong. Please try again.";
+    console.error(err);
+    btn.disabled = false;
+  }
+});
+
+function showResult(name, result) {
+  document.getElementById('test-section').style.display = 'none';
+  const section = document.getElementById('result-section');
+  section.style.display = 'block';
+
+  const tier = (result.tier || "Bronze").toLowerCase();
+  const shareUrl = `${window.location.origin}/result.html?id=${result.id}`;
+
+  section.innerHTML = `
+    <div class="badge-card">
+      <div class="seal ${tier}">
+        <span class="tier-label">${escapeHtml(result.tier)}</span>
+        <span class="score">${result.score}</span>
+      </div>
+      <h2>${escapeHtml(name)}</h2>
+      <p class="verified-tag">Verified by SkillProof — SQL</p>
+      <div class="feedback">${escapeHtml(result.feedback)}</div>
+      <div class="actions">
+        <button class="secondary" onclick="location.reload()">Take the test again</button>
+      </div>
+    </div>
+    <p class="eyebrow" style="text-align:center; margin-top:16px;">Your shareable link</p>
+    <div style="display:flex; gap:8px; margin-top:8px;">
+      <input type="text" id="shareLink" value="${shareUrl}" readonly style="margin-bottom:0;" />
+      <button onclick="navigator.clipboard.writeText(document.getElementById('shareLink').value); this.textContent='Copied!'">Copy</button>
+    </div>
+  `;
+}
+</script>
+</body>
+</html>
