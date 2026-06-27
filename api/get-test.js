@@ -43,7 +43,12 @@ async function countUnused(skill) {
   );
   if (!res.ok) {
     console.error("countUnused failed:", res.status);
-    return REFILL_THRESHOLD; // fail safe: assume pool is fine, don't trigger extra AI calls on error
+    // Fail toward refilling, not toward silence: if we can't confirm the pool
+    // is healthy, treat it as empty so the existing refill logic (below) runs
+    // a full batch. Worst case we generate some tests we didn't strictly need;
+    // the alternative (returning a "looks fine" number) risks the pool quietly
+    // draining to zero with nothing left to trigger a refill.
+    return 0;
   }
   const contentRange = res.headers.get("content-range"); // e.g. "0-4/5"
   const total = contentRange ? parseInt(contentRange.split("/")[1], 10) : 0;
@@ -107,4 +112,4 @@ export default async function handler(req, res) {
       return res.status(500).json({ error: "Could not load a test right now. Please try again." });
     }
   }
-}
+    }
