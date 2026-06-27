@@ -4,6 +4,7 @@
 // (never the answer key) plus its Test ID.
 
 import { generateOneAssessment, generateBatch } from "./generate-pool.js";
+import { getTemplate } from "./templates.js";
 
 const REFILL_THRESHOLD = 10; // if unused count drops below this, top up
 const REFILL_TARGET = 30;    // how many unused tests we want sitting ready
@@ -70,7 +71,14 @@ export default async function handler(req, res) {
   }
 
   const { skill } = req.query;
-  if (!skill || (skill !== "excel" && skill !== "written-english")) {
+  // Validate against whatever templates actually exist, instead of a
+  // hardcoded list of skill names. This means a newly added skill (like
+  // "sql", or anything added after it) works here automatically, as soon
+  // as it has an entry in templates.js — no edit to this file required.
+  let template;
+  try {
+    template = getTemplate(skill);
+  } catch (err) {
     return res.status(400).json({ error: "A valid skill is required" });
   }
 
@@ -112,4 +120,4 @@ export default async function handler(req, res) {
       return res.status(500).json({ error: "Could not load a test right now. Please try again." });
     }
   }
-    }
+}
