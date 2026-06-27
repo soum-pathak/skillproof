@@ -115,6 +115,14 @@
     min-height: 18px;
   }
 
+  #loading {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 13px;
+    color: var(--ink-soft);
+    text-align: center;
+    padding: 40px 0;
+  }
+
   /* Result card */
   .badge-card {
     background: #fff;
@@ -186,19 +194,17 @@
     <p class="tagline">One real task. Graded honestly. Proof you can actually share.</p>
   </header>
 
-  <div id="test-section">
+  <div id="loading">Loading your test...</div>
+
+  <div id="test-section" style="display:none;">
     <p class="eyebrow">Today's task</p>
-    <p class="case-file">
-      A customer emails you, upset that their order arrived five days late.
-      Write a short, professional reply (3–5 sentences) that apologizes,
-      explains you'll look into what happened, and offers a fair next step.
-    </p>
+    <p class="case-file" id="scenario-text"></p>
 
     <label for="name">Your name (optional — shown on your result)</label>
     <input type="text" id="name" placeholder="e.g. Priya Sharma" />
 
     <label for="answer">Your reply</label>
-    <textarea id="answer" rows="6" placeholder="Type your reply to the customer here..."></textarea>
+    <textarea id="answer" rows="6" placeholder="Type your reply here..."></textarea>
 
     <button id="submitBtn">Submit for grading</button>
     <p id="status"></p>
@@ -208,6 +214,34 @@
 </div>
 
 <script>
+let testId = null;
+
+function escapeHtml(str) {
+  const div = document.createElement('div');
+  div.textContent = str;
+  return div.innerHTML;
+}
+
+async function loadTest() {
+  try {
+    const res = await fetch('/api/get-test?skill=written-english');
+    if (!res.ok) throw new Error("Request failed: " + res.status);
+    const data = await res.json();
+
+    testId = data.testId;
+    document.getElementById('scenario-text').textContent = data.questions.scenarioText;
+
+    document.getElementById('loading').style.display = 'none';
+    document.getElementById('test-section').style.display = 'block';
+  } catch (err) {
+    console.error(err);
+    document.getElementById('loading').textContent =
+      "Couldn't load a test right now. Please refresh the page to try again.";
+  }
+}
+
+loadTest();
+
 document.getElementById('submitBtn').addEventListener('click', async () => {
   const answer = document.getElementById('answer').value.trim();
   const name = document.getElementById('name').value.trim() || "Anonymous";
@@ -226,7 +260,7 @@ document.getElementById('submitBtn').addEventListener('click', async () => {
     const res = await fetch('/api/grade-written-english', {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ name, answer })
+      body: JSON.stringify({ name, testId, answer })
     });
     if (!res.ok) throw new Error("Request failed: " + res.status);
     const result = await res.json();
@@ -237,12 +271,6 @@ document.getElementById('submitBtn').addEventListener('click', async () => {
     btn.disabled = false;
   }
 });
-
-function escapeHtml(str) {
-  const div = document.createElement('div');
-  div.textContent = str;
-  return div.innerHTML;
-}
 
 function showResult(name, result) {
   document.getElementById('test-section').style.display = 'none';
