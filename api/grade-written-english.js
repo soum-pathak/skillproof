@@ -24,30 +24,69 @@ async function callGemini(prompt) {
     await new Promise(r => setTimeout(r, attempt * 2000));
   }
 }
+
+async function fetchAssessment(testId) {
+  const res = await fetch(
+    `${process.env.SUPABASE_URL}/rest/v1/assessment_pool?id=eq.${testId}&select=*`,
+    {
+      headers: {
+        "apikey": process.env.SUPABASE_SERVICE_ROLE_KEY,
+        "Authorization": `Bearer ${process.env.SUPABASE_SERVICE_ROLE_KEY}`
+      }
+    }
+  );
+  if (!res.ok) throw new Error("Could not fetch assessment: " + res.status);
+  const rows = await res.json();
+  if (!rows || rows.length === 0) throw new Error("Assessment not found for testId: " + testId);
+  return rows[0];
+}
+
 export default async function handler(req, res) {
   if (req.method !== "POST") {
     return res.status(405).json({ error: "Only POST requests allowed" });
   }
 
-  const { name, answer } = req.body;
+  const { name, testId, answer } = req.body;
+  if (!testId) {
+    return res.status(400).json({ error: "testId is required" });
+  }
   if (!answer || !answer.trim()) {
     return res.status(400).json({ error: "Answer is required" });
   }
 
-  const TASK_TEXT = "A customer emails you, upset that their order arrived five days late. Write a short, professional reply (3-5 sentences) that apologizes, explains you'll look into what happened, and offers a fair next step.";
+  let assessment;
+  try {
+    assessment = await fetchAssessment(testId);
+  } catch (err) {
+    console.error(err);
+    return res.status(404).json({ error: "Could not find this test. It may have expired — please start a new one." });
+  }
+
+  if (assessment.skill !== "written-english") {
+    return res.status(400).json({ error: "This testId is not a Written English assessment" });
+  }
+
+  const { scenarioText } = assessment.questions;
+  const rubric = assessment.answer_key;
 
   const prompt = `You are a strict but fair evaluator of professional written English for job-readiness testing.
 
 TASK GIVEN TO THE CANDIDATE:
-"${TASK_TEXT}"
+"${scenarioText}"
+
+GRADING RUBRIC FOR THIS SPECIFIC SCENARIO:
+- Grammar & spelling: ${rubric.grammarSpelling}
+- Clarity & structure: ${rubric.clarityStructure}
+- Professional tone: ${rubric.professionalTone}
+- Key points a strong reply must address: ${rubric.keyPointsExpected}
 
 CANDIDATE'S RESPONSE:
 """${answer}"""
 
-Grade this on grammar & spelling, clarity & structure, professional tone, and vocabulary.
+Grade against the rubric above.
 
 Respond with ONLY valid JSON, no markdown formatting, no backticks, in exactly this shape:
-{"score": <integer 0-100>, "tier": "Bronze|Silver|Gold", "feedback": "<2-3 sentences of specific, constructive feedback>"}
+{"score": <integer 0-100>, "tier": "Bronze|Silver|Gold", "feedback": "<2-3 sentences of specific, constructive feedback, referencing whether the key points above were addressed>"}
 
 Tier rule: 0-59 = Bronze, 60-79 = Silver, 80-100 = Gold.`;
 
@@ -70,7 +109,8 @@ Tier rule: 0-59 = Bronze, 60-79 = Silver, 80-100 = Gold.`;
         score: result.score,
         tier: result.tier,
         feedback: result.feedback,
-        skill: "written-english"
+        skill: "written-english",
+        test_id: testId
       })
     });
     if (!saveRes.ok) throw new Error("Supabase save failed: " + saveRes.status);
@@ -87,4 +127,4 @@ Tier rule: 0-59 = Bronze, 60-79 = Silver, 80-100 = Gold.`;
     console.error(err);
     return res.status(500).json({ error: "Grading failed. Please try again." });
   }
-        }
+}
