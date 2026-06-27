@@ -25,26 +25,49 @@ async function callGemini(prompt) {
   }
 }
 
+async function fetchAssessment(testId) {
+  const res = await fetch(
+    `${process.env.SUPABASE_URL}/rest/v1/assessment_pool?id=eq.${testId}&select=*`,
+    {
+      headers: {
+        "apikey": process.env.SUPABASE_SERVICE_ROLE_KEY,
+        "Authorization": `Bearer ${process.env.SUPABASE_SERVICE_ROLE_KEY}`
+      }
+    }
+  );
+  if (!res.ok) throw new Error("Could not fetch assessment: " + res.status);
+  const rows = await res.json();
+  if (!rows || rows.length === 0) throw new Error("Assessment not found for testId: " + testId);
+  return rows[0];
+}
+
 export default async function handler(req, res) {
   if (req.method !== "POST") {
     return res.status(405).json({ error: "Only POST requests allowed" });
   }
 
-  const { name, q1, q2, q3, q4, elapsedSeconds } = req.body;
+  const { name, testId, q1, q2, q3, q4, elapsedSeconds } = req.body;
+  if (!testId) {
+    return res.status(400).json({ error: "testId is required" });
+  }
   if (!q1 || !q2 || !q3 || !q4) {
     return res.status(400).json({ error: "All four answers are required" });
   }
 
-  const DATASET_TEXT = `Row | Product   | Region | Units Sold | Price
-2   | Notebook  | North  | 120        | 4.50
-3   | Pen Set   | North  | 340        | 2.20
-4   | Notebook  | South  | 95         | 4.50
-5   | Stapler   | South  | 60         | 7.80
-6   | Pen Set   | East   | 210        | 2.20
-7   | Stapler   | East   | 40         | 7.80
-8   | Notebook  | East   | 150        | 4.50
-9   | Pen Set   | South  | 75         | 2.20
-(Column A = Product, B = Region, C = Units Sold, D = Price. Data starts at row 2.)`;
+  let assessment;
+  try {
+    assessment = await fetchAssessment(testId);
+  } catch (err) {
+    console.error(err);
+    return res.status(404).json({ error: "Could not find this test. It may have expired — please start a new one." });
+  }
+
+  if (assessment.skill !== "excel") {
+    return res.status(400).json({ error: "This testId is not an Excel assessment" });
+  }
+
+  const { datasetText, columnMap, questions } = assessment.questions;
+  const answerKey = assessment.answer_key;
 
   const timeNote = (typeof elapsedSeconds === "number")
     ? `The candidate took ${elapsedSeconds} seconds to complete all four questions.`
@@ -53,18 +76,23 @@ export default async function handler(req, res) {
   const prompt = `You are a strict but fair evaluator of practical Excel/spreadsheet skill for job-readiness testing. The candidate cannot use a real spreadsheet — they typed formulas as plain text. Judge each formula by reasoning about whether its logic and syntax would produce the correct result if entered in Excel or Google Sheets. Minor syntax variations (e.g. different quote styles, VLOOKUP vs XLOOKUP, absolute vs relative references) are acceptable if the logic is correct.
 
 DATASET the candidate was working from:
-${DATASET_TEXT}
+${datasetText}
+${columnMap}
 
-QUESTION 1 (basic formula): Calculate total revenue (Units Sold × Price) for row 2 (Notebook, North). Correct answer is logically equivalent to =C2*D2.
+QUESTION 1 (${questions[0].label}): ${questions[0].text}
+Correct answer is logically equivalent to: ${answerKey.q1}
 CANDIDATE'S ANSWER: """${q1}"""
 
-QUESTION 2 (SUMIF): Total Units Sold for the North region only. Correct answer is logically equivalent to =SUMIF(B2:B9,"North",C2:C9).
+QUESTION 2 (${questions[1].label}): ${questions[1].text}
+Correct answer is logically equivalent to: ${answerKey.q2}
 CANDIDATE'S ANSWER: """${q2}"""
 
-QUESTION 3 (COUNTIF): Count rows where Units Sold > 100. Correct answer is logically equivalent to =COUNTIF(C2:C9,">100").
+QUESTION 3 (${questions[2].label}): ${questions[2].text}
+Correct answer is logically equivalent to: ${answerKey.q3}
 CANDIDATE'S ANSWER: """${q3}"""
 
-QUESTION 4 (XLOOKUP/VLOOKUP): Find the Price of "Stapler". Correct answer is logically equivalent to =XLOOKUP("Stapler",A2:A9,D2:D9) or =VLOOKUP("Stapler",A2:D9,4,FALSE).
+QUESTION 4 (${questions[3].label}): ${questions[3].text}
+Correct answer is logically equivalent to: ${answerKey.q4}
 CANDIDATE'S ANSWER: """${q4}"""
 
 TIMING: ${timeNote} A reasonable time for someone competent is 2-5 minutes (120-300 seconds). Apply at most a small bonus (a few points) for fast AND fully correct work, or a small penalty (a few points) for unusually slow completion (over 10 minutes / 600 seconds). Correctness of the formulas should always matter far more than speed.
@@ -95,7 +123,8 @@ Tier rule: 0-59 = Bronze, 60-79 = Silver, 80-100 = Gold.`;
         score: result.score,
         tier: result.tier,
         feedback: result.feedback,
-        skill: "excel"
+        skill: "excel",
+        test_id: testId
       })
     });
     if (!saveRes.ok) throw new Error("Supabase save failed: " + saveRes.status);
@@ -112,5 +141,4 @@ Tier rule: 0-59 = Bronze, 60-79 = Silver, 80-100 = Gold.`;
     console.error(err);
     return res.status(500).json({ error: "Grading failed. Please try again." });
   }
-}
-
+        }
