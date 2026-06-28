@@ -168,7 +168,7 @@
   const SUPABASE_URL = "https://wiiwzubqkfulxwxypnoy.supabase.co";
   const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndpaXd6dWJxa2Z1bHh3eHlwbm95Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODIzMDQ1MjgsImV4cCI6MjA5Nzg4MDUyOH0.RcQABL7EYveEX3TVshZ2qGtIBs8jGrNWGyQYCxhnrSc";
 
-  const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+  const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
   let mode = "signup"; // or "login"
 
@@ -231,7 +231,7 @@
     try {
       if (mode === "signup") {
         // Step 1: create the auth account itself.
-        const { data, error } = await supabase.auth.signUp({ email, password });
+        const { data, error } = await supabaseClient.auth.signUp({ email, password });
         if (error) throw error;
 
         const userId = data.user ? data.user.id : null;
@@ -245,7 +245,7 @@
         }
 
         // Step 2: create the public profile row, linked to that account.
-        const { error: profileError } = await supabase
+        const { error: profileError } = await supabaseClient
           .from('profiles')
           .insert({ id: userId, username: username });
 
@@ -265,7 +265,7 @@
         setTimeout(() => { window.location.href = "/"; }, 1200);
 
       } else {
-        const { error } = await supabase.auth.signInWithPassword({ email, password });
+        const { error } = await supabaseClient.auth.signInWithPassword({ email, password });
         if (error) throw error;
         showStatus("Logged in! Redirecting...", "success");
         setTimeout(() => { window.location.href = "/"; }, 800);
