@@ -1,0 +1,281 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>SkillProof — Sign Up / Log In</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,500;0,600;1,500&family=Inter:wght@400;500;600&family=IBM+Plex+Mono:wght@500;600&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+  :root {
+    --paper: #FAF7F0;
+    --paper-dim: #F1ECDF;
+    --ink: #1C2A3A;
+    --ink-soft: #4A5A6B;
+    --verify: #1F6B45;
+    --rule: #D9D2BD;
+    --error: #B3261E;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--paper);
+    color: var(--ink);
+    font-family: 'Inter', sans-serif;
+    line-height: 1.5;
+    padding: 48px 20px 80px;
+  }
+  .wrap { max-width: 420px; margin: 0 auto; }
+  .mark {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 12px;
+    letter-spacing: 0.12em;
+    color: var(--verify);
+    text-transform: uppercase;
+    margin-bottom: 24px;
+    text-align: center;
+  }
+  h1 {
+    font-family: 'Lora', serif;
+    font-weight: 600;
+    font-size: 28px;
+    margin: 0 0 8px;
+    text-align: center;
+  }
+  .tagline {
+    color: var(--ink-soft);
+    font-size: 14.5px;
+    margin: 0 0 28px;
+    text-align: center;
+  }
+
+  .toggle-row {
+    display: flex;
+    border: 1px solid var(--rule);
+    border-radius: 4px;
+    overflow: hidden;
+    margin-bottom: 24px;
+  }
+  .toggle-row button {
+    flex: 1;
+    background: #fff;
+    color: var(--ink-soft);
+    border: none;
+    padding: 10px 0;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 12.5px;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    cursor: pointer;
+  }
+  .toggle-row button.active {
+    background: var(--ink);
+    color: var(--paper);
+  }
+
+  label {
+    display: block;
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--ink-soft);
+    margin-bottom: 6px;
+  }
+  input {
+    width: 100%;
+    font-family: 'Inter', sans-serif;
+    font-size: 14px;
+    color: var(--ink);
+    background: #fff;
+    border: 1px solid var(--rule);
+    border-radius: 3px;
+    padding: 12px 14px;
+    margin-bottom: 16px;
+  }
+  input:focus-visible, button:focus-visible {
+    outline: 2px solid var(--verify);
+    outline-offset: 2px;
+  }
+
+  button[type="submit"] {
+    width: 100%;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 13px;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    background: var(--verify);
+    color: #fff;
+    border: none;
+    border-radius: 3px;
+    padding: 13px 22px;
+    cursor: pointer;
+    margin-top: 4px;
+  }
+  button[type="submit"]:disabled { opacity: 0.5; cursor: wait; }
+
+  #status {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 12.5px;
+    color: var(--ink-soft);
+    min-height: 18px;
+    margin-top: 14px;
+    text-align: center;
+  }
+  #status.error { color: var(--error); }
+  #status.success { color: var(--verify); }
+
+  .hint {
+    font-size: 12.5px;
+    color: var(--ink-soft);
+    margin: -8px 0 16px;
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <p class="mark">● SkillProof — Verified Skill Protocol</p>
+  <h1 id="formTitle">Create your profile</h1>
+  <p class="tagline" id="formTagline">Save every test result to one shareable profile.</p>
+
+  <div class="toggle-row">
+    <button id="signupTab" class="active" type="button">Sign up</button>
+    <button id="loginTab" type="button">Log in</button>
+  </div>
+
+  <form id="authForm">
+    <div id="usernameField">
+      <label for="username">Username (shown on your profile link)</label>
+      <input type="text" id="username" placeholder="e.g. priya_codes" autocomplete="username" />
+      <p class="hint">Letters, numbers, and underscores only. This becomes /u/your-username.</p>
+    </div>
+
+    <label for="email">Email</label>
+    <input type="email" id="email" autocomplete="email" required />
+
+    <label for="password">Password</label>
+    <input type="password" id="password" autocomplete="new-password" minlength="6" required />
+
+    <button type="submit" id="submitBtn">Create account</button>
+    <p id="status"></p>
+  </form>
+</div>
+
+<script>
+  // Anon (public) key — safe to use directly in browser-side code. This is
+  // not a secret; Supabase's anon key is specifically designed to be
+  // exposed in client code like this, unlike the service_role key used in
+  // the backend api/*.js files, which must never appear in any browser file.
+  const SUPABASE_URL = "https://wiiwzubqkfulxwxypnoy.supabase.co";
+  const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndpaXd6dWJxa2Z1bHh3eHlwbm95Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODIzMDQ1MjgsImV4cCI6MjA5Nzg4MDUyOH0.RcQABL7EYveEX3TVshZ2qGtIBs8jGrNWGyQYCxhnrSc";
+
+  const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+  let mode = "signup"; // or "login"
+
+  const signupTab = document.getElementById('signupTab');
+  const loginTab = document.getElementById('loginTab');
+  const usernameField = document.getElementById('usernameField');
+  const usernameInput = document.getElementById('username');
+  const formTitle = document.getElementById('formTitle');
+  const formTagline = document.getElementById('formTagline');
+  const submitBtn = document.getElementById('submitBtn');
+  const statusEl = document.getElementById('status');
+
+  function setMode(newMode) {
+    mode = newMode;
+    if (mode === "signup") {
+      signupTab.classList.add('active');
+      loginTab.classList.remove('active');
+      usernameField.style.display = 'block';
+      usernameInput.setAttribute('required', 'required');
+      formTitle.textContent = "Create your profile";
+      formTagline.textContent = "Save every test result to one shareable profile.";
+      submitBtn.textContent = "Create account";
+    } else {
+      loginTab.classList.add('active');
+      signupTab.classList.remove('active');
+      usernameField.style.display = 'none';
+      usernameInput.removeAttribute('required');
+      formTitle.textContent = "Log in";
+      formTagline.textContent = "Welcome back — log in to see your profile.";
+      submitBtn.textContent = "Log in";
+    }
+    statusEl.textContent = '';
+    statusEl.className = '';
+  }
+
+  signupTab.addEventListener('click', () => setMode('signup'));
+  loginTab.addEventListener('click', () => setMode('login'));
+
+  function showStatus(message, type) {
+    statusEl.textContent = message;
+    statusEl.className = type || '';
+  }
+
+  document.getElementById('authForm').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const email = document.getElementById('email').value.trim();
+    const password = document.getElementById('password').value;
+    const username = usernameInput.value.trim();
+
+    if (mode === "signup") {
+      if (!/^[a-zA-Z0-9_]{3,30}$/.test(username)) {
+        showStatus("Username must be 3-30 characters: letters, numbers, underscores only.", "error");
+        return;
+      }
+    }
+
+    submitBtn.disabled = true;
+    showStatus(mode === "signup" ? "Creating your account..." : "Logging in...", "");
+
+    try {
+      if (mode === "signup") {
+        // Step 1: create the auth account itself.
+        const { data, error } = await supabase.auth.signUp({ email, password });
+        if (error) throw error;
+
+        const userId = data.user ? data.user.id : null;
+        if (!userId) {
+          // This happens if email confirmation is still required server-side.
+          // We turned "Confirm email" off earlier, so this shouldn't occur,
+          // but we handle it anyway rather than assuming.
+          showStatus("Account created. Please check your email to confirm, then log in.", "success");
+          submitBtn.disabled = false;
+          return;
+        }
+
+        // Step 2: create the public profile row, linked to that account.
+        const { error: profileError } = await supabase
+          .from('profiles')
+          .insert({ id: userId, username: username });
+
+        if (profileError) {
+          // Most likely cause: that username is already taken (the
+          // database's "unique" rule on profiles.username rejected it).
+          if (profileError.code === '23505') {
+            showStatus("That username is already taken. Please choose another.", "error");
+          } else {
+            showStatus("Account created, but profile setup failed: " + profileError.message, "error");
+          }
+          submitBtn.disabled = false;
+          return;
+        }
+
+        showStatus("Account created! Redirecting...", "success");
+        setTimeout(() => { window.location.href = "/"; }, 1200);
+
+      } else {
+        const { error } = await supabase.auth.signInWithPassword({ email, password });
+        if (error) throw error;
+        showStatus("Logged in! Redirecting...", "success");
+        setTimeout(() => { window.location.href = "/"; }, 800);
+      }
+    } catch (err) {
+      console.error(err);
+      showStatus(err.message || "Something went wrong. Please try again.", "error");
+      submitBtn.disabled = false;
+    }
+  });
+</script>
+</body>
+</html>
