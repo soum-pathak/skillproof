@@ -244,8 +244,27 @@
   }
 
   async function loadProfile() {
-    const params = new URLSearchParams(window.location.search);
-    const username = params.get('u');
+    // IMPORTANT: even though vercel.json's rewrite is written as
+    // "/profile.html?u=:username", that query string is only used
+    // internally by Vercel to pick which file to serve — it does NOT
+    // become part of the real, visible URL for a static HTML page like
+    // this one. window.location still shows "/u/soumpathak" with no query
+    // string at all. So we read the username from the PATH instead.
+    //
+    // We support both, for flexibility: the path-based form (the real
+    // /u/username links people will actually visit) and the old query
+    // form (useful if this file is ever opened directly as
+    // profile.html?u=username while testing).
+    let username = null;
+
+    const pathMatch = window.location.pathname.match(/^\/u\/([^/]+)\/?$/);
+    if (pathMatch) {
+      username = decodeURIComponent(pathMatch[1]);
+    } else {
+      const params = new URLSearchParams(window.location.search);
+      username = params.get('u');
+    }
+
     const content = document.getElementById('content');
 
     if (!username) {
