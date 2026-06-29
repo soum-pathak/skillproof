@@ -57,7 +57,7 @@ export default async function handler(req, res) {
     return res.status(405).json({ error: "Only POST requests allowed" });
   }
 
-  const { name, testId, q1, q2, q3, q4, elapsedSeconds } = req.body;
+  const { name, testId, q1, q2, q3, q4, elapsedSeconds, userId } = req.body;
   if (!testId) {
     return res.status(400).json({ error: "testId is required" });
   }
@@ -145,6 +145,22 @@ Tier rule: 0-59 = Bronze, 60-79 = Silver, 80-100 = Gold.`;
     raw = raw.replace(/```json|```/g, "").trim();
     const result = JSON.parse(raw);
 
+    // Build the row to save. user_id is only included if a real,
+    // logged-in userId was sent from the page — anonymous submissions
+    // (userId is null/undefined) save exactly as they always have, with
+    // user_id left out entirely (Supabase will store it as null).
+    const resultRow = {
+      name: (name || "Anonymous").slice(0, 60),
+      score: result.score,
+      tier: result.tier,
+      feedback: result.feedback,
+      skill: "sql",
+      test_id: testId
+    };
+    if (userId) {
+      resultRow.user_id = userId;
+    }
+
     const saveRes = await fetch(`${process.env.SUPABASE_URL}/rest/v1/results`, {
       method: "POST",
       headers: {
@@ -153,14 +169,7 @@ Tier rule: 0-59 = Bronze, 60-79 = Silver, 80-100 = Gold.`;
         "Authorization": `Bearer ${process.env.SUPABASE_SERVICE_ROLE_KEY}`,
         "Prefer": "return=representation"
       },
-      body: JSON.stringify({
-        name: (name || "Anonymous").slice(0, 60),
-        score: result.score,
-        tier: result.tier,
-        feedback: result.feedback,
-        skill: "sql",
-        test_id: testId
-      })
+      body: JSON.stringify(resultRow)
     });
     if (!saveRes.ok) throw new Error("Supabase save failed: " + saveRes.status);
 
