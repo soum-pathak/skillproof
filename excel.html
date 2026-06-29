@@ -6,6 +6,7 @@
 <title>SkillProof — Excel / Spreadsheets Test</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,500;0,600;1,500&family=Inter:wght@400;500;600&family=IBM+Plex+Mono:wght@500;600&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
   :root {
     --paper: #FAF7F0;
@@ -128,7 +129,14 @@
     margin-bottom: 6px;
     resize: vertical;
   }
-  #name { font-family: 'Inter', sans-serif; margin-bottom: 22px; }
+  #name { font-family: 'Inter', sans-serif; margin-bottom: 6px; }
+  #name:disabled { background: var(--paper-dim); color: var(--ink-soft); cursor: not-allowed; }
+  #loginNote {
+    font-size: 12.5px;
+    color: var(--ink-soft);
+    margin: 0 0 22px;
+  }
+  #loginNote a { color: var(--verify); }
   input:focus-visible, textarea:focus-visible, button:focus-visible {
     outline: 2px solid var(--verify);
     outline-offset: 2px;
@@ -246,8 +254,9 @@
 
     <div id="questions-container"></div>
 
-    <label for="name">Your name (optional — shown on your result)</label>
+    <label for="name">Your name (shown on your result)</label>
     <input type="text" id="name" placeholder="e.g. Priya Sharma" />
+    <p id="loginNote"><a href="/signup.html">Log in or sign up</a> to save this result to a profile.</p>
 
     <button id="submitBtn">Submit for grading</button>
     <p id="status"></p>
@@ -260,6 +269,46 @@
 let testId = null;
 let startTime = null;
 let timerInterval = null;
+
+// --- Login awareness ---------------------------------------------------
+// Anon (public) key — same client-side approach as signup.html/profile.html.
+// This is only used to check "is someone logged in right now" and, if so,
+// to read their real user id and username. It never writes anything.
+const SUPABASE_URL = "https://wiiwzubqkfulxwxypnoy.supabase.co";
+const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndpaXd6dWJxa2Z1bHh3eHlwbm95Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODIzMDQ1MjgsImV4cCI6MjA5Nzg4MDUyOH0.RcQABL7EYveEX3TVshZ2qGtIBs8jGrNWGyQYCxhnrSc";
+const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+let currentUserId = null; // stays null if nobody is logged in — anonymous testing still works exactly as before
+
+async function checkLogin() {
+  try {
+    const { data } = await supabaseClient.auth.getSession();
+    const session = data && data.session;
+    if (!session || !session.user) return; // not logged in — nothing to do
+
+    currentUserId = session.user.id;
+
+    // Look up their username so we can auto-fill the name field.
+    const { data: profiles, error } = await supabaseClient
+      .from('profiles')
+      .select('username')
+      .eq('id', currentUserId)
+      .limit(1);
+
+    if (error || !profiles || profiles.length === 0) return; // fall back to anonymous-style behavior if this fails
+
+    const nameInput = document.getElementById('name');
+    nameInput.value = profiles[0].username;
+    nameInput.disabled = true;
+
+    document.getElementById('loginNote').textContent =
+      `Logged in as ${profiles[0].username} — this result will be saved to your profile.`;
+  } catch (err) {
+    console.error("checkLogin failed:", err);
+    // Fail silently toward anonymous behavior — a login-check problem
+    // should never block someone from taking the test.
+  }
+}
 
 function escapeHtml(str) {
   const div = document.createElement('div');
@@ -335,7 +384,7 @@ async function loadTest() {
   }
 }
 
-loadTest();
+checkLogin().then(loadTest);
 
 document.getElementById('submitBtn').addEventListener('click', async () => {
   const q1 = document.getElementById('q1').value.trim();
@@ -361,7 +410,7 @@ document.getElementById('submitBtn').addEventListener('click', async () => {
     const res = await fetch('/api/grade-excel', {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ name, testId, q1, q2, q3, q4, elapsedSeconds })
+      body: JSON.stringify({ name, testId, q1, q2, q3, q4, elapsedSeconds, userId: currentUserId })
     });
     if (!res.ok) throw new Error("Request failed: " + res.status);
     const result = await res.json();
@@ -404,4 +453,3 @@ function showResult(name, result) {
 </script>
 </body>
 </html>
-
