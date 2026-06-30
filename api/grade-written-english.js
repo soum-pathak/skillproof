@@ -46,7 +46,7 @@ export default async function handler(req, res) {
     return res.status(405).json({ error: "Only POST requests allowed" });
   }
 
-  const { name, testId, answer, userId } = req.body;
+  const { name, testId, answer, userId, authenticitySummary } = req.body;
   if (!testId) {
     return res.status(400).json({ error: "testId is required" });
   }
@@ -110,6 +110,13 @@ Tier rule: 0-59 = Bronze, 60-79 = Silver, 80-100 = Gold.`;
     };
     if (userId) {
       resultRow.user_id = userId;
+    }
+    // Same pattern for the authenticity signal: only attached if the page
+    // actually sent one. Older clients (or a future page that doesn't load
+    // authenticity.js for some reason) simply won't include this, and the
+    // column stays null, same as it always has been.
+    if (authenticitySummary) {
+      resultRow.authenticity_data = authenticitySummary;
     }
 
     const saveRes = await fetch(`${process.env.SUPABASE_URL}/rest/v1/results`, {
