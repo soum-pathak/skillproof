@@ -1,5 +1,5 @@
 async function callGemini(prompt) {
-  const maxAttempts = 3;
+  const maxAttempts = 4;
   for (let attempt = 1; attempt <= maxAttempts; attempt++) {
     const geminiRes = await fetch(
       `https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-preview:generateContent?key=${process.env.GEMINI_API_KEY}`,
@@ -15,13 +15,20 @@ async function callGemini(prompt) {
     }
 
     // 503 means Google's server is just temporarily busy — worth trying again.
+    // 429 means we've hit a rate limit (too many requests too quickly) — also
+    // worth trying again, but rate limits usually need a longer pause to
+    // clear than a simple server hiccup does, so it gets a longer wait below.
     // Any other error code means something is actually wrong, so stop right away.
-    if (geminiRes.status !== 503 || attempt === maxAttempts) {
+    const isRetryable = geminiRes.status === 503 || geminiRes.status === 429;
+    if (!isRetryable || attempt === maxAttempts) {
       throw new Error("Gemini request failed: " + geminiRes.status);
     }
 
-    // Wait a little longer each retry, so we're not hammering an already-busy server
-    await new Promise(r => setTimeout(r, attempt * 2000));
+    // Rate limits (429) get a longer, larger backoff than a busy-server
+    // retry (503) would, since clearing a per-minute rate limit usually
+    // takes several seconds, not a couple.
+    const waitMs = geminiRes.status === 429 ? attempt * 5000 : attempt * 2000;
+    await new Promise(r => setTimeout(r, waitMs));
   }
 }
 
