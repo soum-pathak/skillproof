@@ -7,6 +7,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,500;0,600;1,500&family=Inter:wght@400;500;600&family=IBM+Plex+Mono:wght@500;600&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="/authenticity.js"></script>
 <style>
   :root {
     --paper: #FAF7F0;
@@ -369,6 +370,16 @@ async function loadTest() {
     document.getElementById('loading').style.display = 'none';
     document.getElementById('test-section').style.display = 'block';
 
+    // Start watching the four answer fields for paste events / typing
+    // cadence. This is purely additive — it never blocks typing, and if
+    // the helper script failed to load for some reason, this call is
+    // wrapped so the whole page still works without it.
+    try {
+      attachAuthenticityTracking(['q1', 'q2', 'q3', 'q4']);
+    } catch (err) {
+      console.error("attachAuthenticityTracking failed:", err);
+    }
+
     startTime = Date.now();
     const timerEl = document.getElementById('timer');
     timerInterval = setInterval(() => {
@@ -400,6 +411,23 @@ document.getElementById('submitBtn').addEventListener('click', async () => {
     return;
   }
 
+  // Read the paste/typing summary captured so far. If the helper script
+  // somehow isn't available, fall back to null rather than blocking submission.
+  let authenticitySummary = null;
+  try {
+    authenticitySummary = getAuthenticitySummary();
+  } catch (err) {
+    console.error("getAuthenticitySummary failed:", err);
+  }
+
+  // Warn (but don't block) if a paste was detected in any answer field.
+  if (authenticitySummary && authenticitySummary.pasteDetected) {
+    const proceed = confirm(
+      "We noticed pasted content in one of your answers. You can still submit — just checking this reflects your own work. Continue?"
+    );
+    if (!proceed) return;
+  }
+
   const elapsedSeconds = Math.floor((Date.now() - startTime) / 1000);
   clearInterval(timerInterval);
 
@@ -410,7 +438,7 @@ document.getElementById('submitBtn').addEventListener('click', async () => {
     const res = await fetch('/api/grade-excel', {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ name, testId, q1, q2, q3, q4, elapsedSeconds, userId: currentUserId })
+      body: JSON.stringify({ name, testId, q1, q2, q3, q4, elapsedSeconds, userId: currentUserId, authenticitySummary })
     });
     if (!res.ok) throw new Error("Request failed: " + res.status);
     const result = await res.json();
