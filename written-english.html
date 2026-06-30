@@ -324,7 +324,7 @@ document.getElementById('submitBtn').addEventListener('click', async () => {
   }
 
   // Warn (but don't block) if a paste was detected.
-  if (authenticitySummary && authenticitySummary.pasteDetected) {
+  if (authenticitySummary && (authenticitySummary.pasteDetected || authenticitySummary.suspectedInsertDetected)) {
     const proceed = confirm(
       "We noticed pasted content in your reply. You can still submit — just checking this reflects your own work. Continue?"
     );
