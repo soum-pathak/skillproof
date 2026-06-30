@@ -7,6 +7,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,500;0,600;1,500&family=Inter:wght@400;500;600&family=IBM+Plex+Mono:wght@500;600&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="/authenticity.js"></script>
 <style>
   :root {
     --paper: #FAF7F0;
@@ -283,6 +284,16 @@ async function loadTest() {
 
     document.getElementById('loading').style.display = 'none';
     document.getElementById('test-section').style.display = 'block';
+
+    // Start watching the answer field for paste events / typing cadence.
+    // This is purely additive — it never blocks typing, and if the helper
+    // script failed to load for some reason, this call is wrapped so the
+    // whole page still works without it.
+    try {
+      attachAuthenticityTracking(['answer']);
+    } catch (err) {
+      console.error("attachAuthenticityTracking failed:", err);
+    }
   } catch (err) {
     console.error(err);
     document.getElementById('loading').textContent =
@@ -303,6 +314,23 @@ document.getElementById('submitBtn').addEventListener('click', async () => {
     return;
   }
 
+  // Read the paste/typing summary captured so far. If the helper script
+  // somehow isn't available, fall back to null rather than blocking submission.
+  let authenticitySummary = null;
+  try {
+    authenticitySummary = getAuthenticitySummary();
+  } catch (err) {
+    console.error("getAuthenticitySummary failed:", err);
+  }
+
+  // Warn (but don't block) if a paste was detected.
+  if (authenticitySummary && authenticitySummary.pasteDetected) {
+    const proceed = confirm(
+      "We noticed pasted content in your reply. You can still submit — just checking this reflects your own work. Continue?"
+    );
+    if (!proceed) return;
+  }
+
   btn.disabled = true;
   statusEl.textContent = "Grading your reply...";
 
@@ -310,7 +338,7 @@ document.getElementById('submitBtn').addEventListener('click', async () => {
     const res = await fetch('/api/grade-written-english', {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ name, testId, answer, userId: currentUserId })
+      body: JSON.stringify({ name, testId, answer, userId: currentUserId, authenticitySummary })
     });
     if (!res.ok) throw new Error("Request failed: " + res.status);
     const result = await res.json();
