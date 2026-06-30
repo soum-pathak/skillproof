@@ -21,16 +21,38 @@
 //      and include `summary` in whatever you send to the grading API.
 //      `summary.pasteDetected` (true/false) tells you whether to show the
 //      "we noticed pasted content" warning before letting them submit.
+//
+// DETECTION METHODS (two, kept separate on purpose):
+//   - "paste" event: fires for a real Ctrl+V, right-click Paste, or
+//     long-press Paste. This is solid evidence — recorded as pasteDetected.
+//   - Sudden large jump in field length on an "input" event, with no
+//     matching paste event: this catches insertions that don't fire a
+//     real paste event at all — e.g. Android's Gboard clipboard-suggestion
+//     chip, some autofill flows, voice-to-text drops. This is weaker,
+//     inferred evidence (we're guessing from a length jump, not seeing an
+//     actual clipboard action) — recorded separately as
+//     suspectedInsertDetected, so the two are never confused with each other.
 
 (function () {
-  // Tracks state per field id, e.g. { q1: { pasteCount, pastedChars, firstKeystrokeAt, lastKeystrokeAt, keystrokes }, ... }
+  // Tracks state per field id.
   const fieldState = {};
+
+  // Any single human keystroke is realistically 1 character (sometimes 2
+  // for things like autocomplete-expanding a key combo). A jump bigger than
+  // this in one "input" event, with no real paste event behind it, is a
+  // strong sign text was inserted some other way (clipboard chip, autofill,
+  // voice typing, etc).
+  const SUSPECT_JUMP_THRESHOLD = 8;
 
   function ensureField(id) {
     if (!fieldState[id]) {
       fieldState[id] = {
         pasteCount: 0,
         pastedChars: 0,
+        suspectedInsertCount: 0,
+        suspectedInsertChars: 0,
+        lastValueLength: 0,
+        justSawRealPaste: false,
         firstKeystrokeAt: null,
         lastKeystrokeAt: null,
         keystrokes: 0
@@ -51,6 +73,30 @@
       pastedText = "";
     }
     state.pastedChars += pastedText.length;
+    // Mark this so the very next "input" event on this field (which will
+    // fire right after this paste) isn't also counted as a separate
+    // "suspected" insert — it's the same paste, already recorded properly.
+    state.justSawRealPaste = true;
+  }
+
+  function handleInput(id, event) {
+    const state = ensureField(id);
+    const el = event.target;
+    const newLength = (el.value || "").length;
+    const delta = newLength - state.lastValueLength;
+
+    if (state.justSawRealPaste) {
+      // This input event belongs to the paste we already recorded above —
+      // skip it so we don't double-count the same insertion.
+      state.justSawRealPaste = false;
+    } else if (delta >= SUSPECT_JUMP_THRESHOLD) {
+      // A big jump with no real paste event behind it — likely a
+      // clipboard-suggestion-chip insert, autofill, or similar.
+      state.suspectedInsertCount += 1;
+      state.suspectedInsertChars += delta;
+    }
+
+    state.lastValueLength = newLength;
   }
 
   function handleKeydown(id) {
@@ -68,8 +114,10 @@
     (fieldIds || []).forEach(function (id) {
       const el = document.getElementById(id);
       if (!el) return; // field not on this page yet / wrong id — skip quietly, never break the page over this
-      ensureField(id);
+      const state = ensureField(id);
+      state.lastValueLength = (el.value || "").length;
       el.addEventListener("paste", function (event) { handlePaste(id, event); });
+      el.addEventListener("input", function (event) { handleInput(id, event); });
       el.addEventListener("keydown", function () { handleKeydown(id); });
     });
   };
@@ -78,8 +126,11 @@
   // to send straight to a grading API as JSON.
   window.getAuthenticitySummary = function () {
     const fieldsWithPaste = [];
+    const fieldsWithSuspectedInsert = [];
     let pasteCount = 0;
     let totalPastedChars = 0;
+    let suspectedInsertCount = 0;
+    let totalSuspectedInsertChars = 0;
     let earliestStart = null;
     let latestEnd = null;
     let totalKeystrokes = 0;
@@ -87,8 +138,11 @@
     Object.keys(fieldState).forEach(function (id) {
       const s = fieldState[id];
       if (s.pasteCount > 0) fieldsWithPaste.push(id);
+      if (s.suspectedInsertCount > 0) fieldsWithSuspectedInsert.push(id);
       pasteCount += s.pasteCount;
       totalPastedChars += s.pastedChars;
+      suspectedInsertCount += s.suspectedInsertCount;
+      totalSuspectedInsertChars += s.suspectedInsertChars;
       totalKeystrokes += s.keystrokes;
       if (s.firstKeystrokeAt !== null) {
         if (earliestStart === null || s.firstKeystrokeAt < earliestStart) earliestStart = s.firstKeystrokeAt;
@@ -99,10 +153,18 @@
     });
 
     return {
+      // Confirmed via a real browser paste event — strong evidence.
       pasteDetected: pasteCount > 0,
       pasteCount: pasteCount,
       totalPastedChars: totalPastedChars,
       fieldsWithPaste: fieldsWithPaste,
+      // Inferred from a sudden large jump in field length with no matching
+      // paste event — weaker, but catches Gboard's clipboard-suggestion
+      // chip and similar insertion paths a real "paste" event would miss.
+      suspectedInsertDetected: suspectedInsertCount > 0,
+      suspectedInsertCount: suspectedInsertCount,
+      totalSuspectedInsertChars: totalSuspectedInsertChars,
+      fieldsWithSuspectedInsert: fieldsWithSuspectedInsert,
       totalKeystrokes: totalKeystrokes,
       typingDurationMs: (earliestStart !== null && latestEnd !== null) ? (latestEnd - earliestStart) : null
     };
