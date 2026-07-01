@@ -7,7 +7,7 @@ export default async function handler(req, res) {
 
   try {
     const supaRes = await fetch(
-      `${process.env.SUPABASE_URL}/rest/v1/results?id=eq.${id}&select=name,score,tier,feedback,created_at,skill`,
+      `${process.env.SUPABASE_URL}/rest/v1/results?id=eq.${id}&select=name,score,tier,feedback,created_at,skill,authenticity_data`,
       {
         headers: {
           "apikey": process.env.SUPABASE_SERVICE_ROLE_KEY,
