@@ -10,6 +10,7 @@
 :root {
   --paper: #FAF7F0; --paper-dim: #F1ECDF; --ink: #1C2A3A; --ink-soft: #4A5A6B;
   --verify: #1F6B45; --rule: #D9D2BD; --bronze: #9C6B3E; --silver: #6E7580; --gold: #A9821F;
+  --caution: #9C5A1F;
 }
 * { box-sizing: border-box; }
 body { margin: 0; background: var(--paper); color: var(--ink); font-family: 'Inter', sans-serif; line-height: 1.5; padding: 48px 20px 80px; }
@@ -25,6 +26,16 @@ body { margin: 0; background: var(--paper); color: var(--ink); font-family: 'Int
 .badge-card h2 { font-family: 'Lora', serif; font-size: 22px; margin: 0 0 4px; }
 .verified-tag { font-family: 'IBM Plex Mono', monospace; font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--verify); margin: 0 0 20px; }
 .feedback { font-size: 14px; color: var(--ink-soft); text-align: left; background: var(--paper-dim); border-radius: 3px; padding: 14px 16px; margin-bottom: 18px; }
+.authenticity-note {
+  font-size: 12.5px;
+  color: var(--caution);
+  text-align: left;
+  background: #FBF0E4;
+  border-left: 3px solid var(--caution);
+  border-radius: 3px;
+  padding: 10px 14px;
+  margin-bottom: 18px;
+}
 .cta { display: block; text-align: center; margin-top: 24px; font-family: 'IBM Plex Mono', monospace; font-size: 12px; letter-spacing: 0.04em; text-transform: uppercase; color: var(--ink); }
 #status { text-align: center; font-family: 'IBM Plex Mono', monospace; font-size: 13px; color: var(--ink-soft); }
 </style>
@@ -46,6 +57,25 @@ function skillLabel(skill) {
   if (skill === "excel") return "Excel / Spreadsheets";
   if (skill === "sql") return "SQL";
   return "Professional English";
+}
+
+// Builds the small, honest disclosure note shown when the saved
+// authenticity_data indicates pasted content was used (either a confirmed
+// paste event, or a large sudden text change inferred as a likely
+// non-typed insert — see authenticity.js for how these are captured).
+// Returns an empty string if there's nothing to flag, so the card looks
+// exactly as it always has for a normally-typed submission.
+function renderAuthenticityNote(authenticityData) {
+  if (!authenticityData) return '';
+  const pasted = !!authenticityData.pasteDetected;
+  const suspected = !!authenticityData.suspectedInsertDetected;
+  if (!pasted && !suspected) return '';
+
+  return `
+    <div class="authenticity-note">
+      Note: pasted or inserted content was detected while this test was being completed. This is an automated signal, not a determination of dishonesty — it simply reflects how the answer was entered.
+    </div>
+  `;
 }
 
 async function loadResult() {
@@ -72,6 +102,7 @@ async function loadResult() {
         </div>
         <h2>${escapeHtml(result.name)}</h2>
         <p class="verified-tag">Verified by SkillProof — ${skillLabel(result.skill)}</p>
+        ${renderAuthenticityNote(result.authenticity_data)}
         <div class="feedback">${escapeHtml(result.feedback)}</div>
       </div>
     `;
