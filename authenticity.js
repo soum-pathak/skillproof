@@ -1,12 +1,13 @@
 // authenticity.js
 //
 // A small, dependency-free helper that any SkillProof test page can use to
-// capture a basic "did this look like genuine typing, or was it pasted in"
-// signal. This is NOT proof of cheating — someone could still read an
-// answer off another screen and type it themselves, or have someone
-// dictate it to them. It's a soft signal, stored alongside each result,
-// meant to eventually show something like "no paste detected" next to a
-// result as one (not the only) trust signal.
+// capture a basic "did this look like genuine effort, or was something
+// suspicious going on" signal. This is NOT proof of cheating — someone
+// could still read an answer off another screen and type it themselves,
+// switch tabs for an innocent reason (a notification, a phone call), or
+// have someone dictate an answer to them. It's a soft signal, stored
+// alongside each result, shown as a plain disclosure on the result page —
+// never used to block submission or silently change a score.
 //
 // HOW TO USE THIS ON A TEST PAGE:
 //   1. Add this near the top of the page, after the other <script> tags:
@@ -16,22 +17,28 @@
 //        attachAuthenticityTracking(["q1", "q2", "q3", "q4"]);
 //      passing the id of every input/textarea the candidate types answers
 //      into (for written-english.html, this would just be ["answer"]).
+//      This call also starts tab-visibility tracking for the whole page —
+//      no separate setup needed for that part.
 //   3. Right before submitting, call:
 //        const summary = getAuthenticitySummary();
 //      and include `summary` in whatever you send to the grading API.
-//      `summary.pasteDetected` (true/false) tells you whether to show the
-//      "we noticed pasted content" warning before letting them submit.
+//      Check summary.pasteDetected, summary.suspectedInsertDetected, and
+//      summary.tabSwitchDetected to decide whether to show a warning
+//      before letting them submit.
 //
-// DETECTION METHODS (two, kept separate on purpose):
+// DETECTION METHODS:
 //   - "paste" event: fires for a real Ctrl+V, right-click Paste, or
-//     long-press Paste. This is solid evidence — recorded as pasteDetected.
+//     long-press Paste. Solid evidence — recorded as pasteDetected.
 //   - Sudden large jump in field length on an "input" event, with no
-//     matching paste event: this catches insertions that don't fire a
-//     real paste event at all — e.g. Android's Gboard clipboard-suggestion
-//     chip, some autofill flows, voice-to-text drops. This is weaker,
-//     inferred evidence (we're guessing from a length jump, not seeing an
-//     actual clipboard action) — recorded separately as
-//     suspectedInsertDetected, so the two are never confused with each other.
+//     matching paste event: catches insertions that don't fire a real
+//     paste event at all — e.g. Android's Gboard clipboard-suggestion
+//     chip, some autofill flows, voice-to-text drops. Weaker, inferred
+//     evidence — recorded separately as suspectedInsertDetected.
+//   - "visibilitychange" event: fires when the browser tab is backgrounded
+//     (switched away from) or the app is backgrounded on mobile — e.g.
+//     checking another tab, app, or asking someone else for help. Also
+//     inferred, not proof — recorded as tabSwitchDetected, with a count
+//     and total time spent away.
 
 (function () {
   // Tracks state per field id.
@@ -43,6 +50,14 @@
   // strong sign text was inserted some other way (clipboard chip, autofill,
   // voice typing, etc).
   const SUSPECT_JUMP_THRESHOLD = 8;
+
+  // Page-level (not per-field) tab-visibility tracking.
+  const visibilityState = {
+    switchCount: 0,
+    totalHiddenMs: 0,
+    hiddenSince: null,
+    attached: false
+  };
 
   function ensureField(id) {
     if (!fieldState[id]) {
@@ -109,6 +124,18 @@
     state.keystrokes += 1;
   }
 
+  function handleVisibilityChange() {
+    if (document.hidden) {
+      // Tab/app just got backgrounded — start timing how long it's away.
+      visibilityState.hiddenSince = Date.now();
+      visibilityState.switchCount += 1;
+    } else if (visibilityState.hiddenSince !== null) {
+      // Came back — add however long it was away to the running total.
+      visibilityState.totalHiddenMs += Date.now() - visibilityState.hiddenSince;
+      visibilityState.hiddenSince = null;
+    }
+  }
+
   // Call this once, after the field(s) you want to watch already exist in the page.
   window.attachAuthenticityTracking = function (fieldIds) {
     (fieldIds || []).forEach(function (id) {
@@ -120,6 +147,14 @@
       el.addEventListener("input", function (event) { handleInput(id, event); });
       el.addEventListener("keydown", function () { handleKeydown(id); });
     });
+
+    // Tab-visibility tracking is page-level, so it's only attached once,
+    // regardless of how many fields are passed in or how many times this
+    // function gets called.
+    if (!visibilityState.attached) {
+      document.addEventListener("visibilitychange", handleVisibilityChange);
+      visibilityState.attached = true;
+    }
   };
 
   // Call this right before submitting, to get a plain-object summary safe
@@ -152,6 +187,14 @@
       }
     });
 
+    // If the tab is hidden at the exact moment someone calls this (unlikely,
+    // since you can't click Submit on a backgrounded tab, but guarded for
+    // safety), count the time up to now rather than losing it.
+    let totalHiddenMs = visibilityState.totalHiddenMs;
+    if (visibilityState.hiddenSince !== null) {
+      totalHiddenMs += Date.now() - visibilityState.hiddenSince;
+    }
+
     return {
       // Confirmed via a real browser paste event — strong evidence.
       pasteDetected: pasteCount > 0,
@@ -165,6 +208,12 @@
       suspectedInsertCount: suspectedInsertCount,
       totalSuspectedInsertChars: totalSuspectedInsertChars,
       fieldsWithSuspectedInsert: fieldsWithSuspectedInsert,
+      // Inferred from the tab/app being backgrounded during the test —
+      // also not proof (could be a notification, a phone call, an
+      // accidental switch), but a real signal worth disclosing.
+      tabSwitchDetected: visibilityState.switchCount > 0,
+      tabSwitchCount: visibilityState.switchCount,
+      totalTabHiddenMs: totalHiddenMs,
       totalKeystrokes: totalKeystrokes,
       typingDurationMs: (earliestStart !== null && latestEnd !== null) ? (latestEnd - earliestStart) : null
     };
